@@ -19,7 +19,7 @@ async function issueNextToken(ctx, code, email) {
         return null;
     }
     const next_token_secret = `${ctx.jwt_secret}_${code}`;
-    return jwt.sign({email}, next_token_secret, null, null);
+    return jwt.sign(user, next_token_secret, null, null);
 }
 
 function validateToken(ctx, token) {

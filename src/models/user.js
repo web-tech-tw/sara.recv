@@ -6,10 +6,9 @@ const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
 
 const user = new Schema({
-    author: ObjectId,
-    title: String,
-    body: String,
-    date: Date
+    id: ObjectId,
+    email: String,
+    nickname: String
 });
 
 module.exports = user;
