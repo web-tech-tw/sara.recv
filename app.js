@@ -8,6 +8,7 @@ const SECRET_FILENAME = 'secret.key';
 const fs = require('fs')
 const crypto = require('crypto');
 const express = require('express');
+const mongoose = require('mongoose');
 const http_status = require('http-status-codes');
 const email_validator = require('email-validator');
 
@@ -30,6 +31,8 @@ if (ctx.jwt_secret.length < 2048) {
     throw 'JWT secret IS NOT SAFE, please generate the new one with "npm run new-secret"';
 }
 // Check end
+
+ctx.database = mongoose.connect(process.env.MONGODB_URI);
 
 const app = express();
 
