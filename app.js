@@ -1,29 +1,40 @@
 "use strict";
 
-const nodemailer = require("nodemailer");
+const APP_NAME = 'sara.recv'
+const express = require('express')
+const http_status = require('http-status-codes')
+const email_validator = require('email-validator');
+const app = express()
+const port = 3000
 
-async function main() {
-    let testAccount = await nodemailer.createTestAccount();
-    let transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-        },
-    });
+app.use(express.urlencoded({extended: true}))
 
-    let info = await transporter.sendMail({
-        from: '"Fred Foo 👻" <foo@example.com>',
-        to: "bar@example.com, baz@example.com",
-        subject: "Hello ✔",
-        text: "Hello world?",
-        html: "<b>Hello world?</b>",
-    });
+app.get('/', (req, res) => {
+    res.send(APP_NAME)
+})
 
-    console.log("Message sent: %s", info.messageId);
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-}
+app.post('/login', (req, res) => {
+    if (!("email" in req.body)) {
+        res.status(http_status.BAD_REQUEST).end()
+    } else if (email_validator.validate(req.body["email"])) {
+        res.status(http_status.CREATED).end()
+    } else {
+        res.status(http_status.FORBIDDEN).end()
+    }
+})
 
-main().catch(console.error);
+app.post('/register', (req, res) => {
+    if (!("email" in req.body)) {
+        res.status(http_status.BAD_REQUEST).end()
+    } else if (email_validator.validate(req.body["email"])) {
+        res.status(http_status.CREATED).end()
+    } else {
+        res.status(http_status.FORBIDDEN).end()
+    }
+})
+
+app.listen(port, () => {
+    console.log(APP_NAME)
+    console.log('====')
+    console.log(`Application is listening at http://localhost:${port}`)
+})
