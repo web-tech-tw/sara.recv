@@ -6,7 +6,7 @@
     "license": "MIT",
     "main": "app.js",
     "scripts": {
-        "new-token": "node new_token.js",
+        "new-secret": "node new_secret.js",
         "dev": "nodemon app.js",
         "start": "node app.js"
     },
