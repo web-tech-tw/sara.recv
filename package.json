@@ -6,6 +6,7 @@
     "license": "MIT",
     "main": "app.js",
     "scripts": {
+        "new-token": "node new_token.js",
         "dev": "nodemon app.js",
         "start": "node app.js"
     },
@@ -15,6 +16,7 @@
         "express": "^4.16.1",
         "http-status-codes": "^2.2.0",
         "jsonwebtoken": "^8.5.1",
+        "mongoose": "^6.2.9",
         "nodemailer": "^6.7.3"
     },
     "devDependencies": {

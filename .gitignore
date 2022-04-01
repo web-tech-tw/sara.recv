@@ -2,6 +2,7 @@
 node_modules
 /dist
 .env
+secret.key
 
 # Log files
 npm-debug.log*

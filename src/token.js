@@ -1,29 +1,29 @@
 "use strict";
 
-const nodemailer = require("nodemailer");
+const jwt = require('jsonwebtoken');
+const user_schema = require('./models/user');
 
-async function main() {
-    let testAccount = await nodemailer.createTestAccount();
-    let transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-        },
-    });
-
-    let info = await transporter.sendMail({
-        from: '"Fred Foo 👻" <foo@example.com>',
-        to: "bar@example.com, baz@example.com",
-        subject: "Hello ✔",
-        text: "Hello world?",
-        html: "<b>Hello world?</b>",
-    });
-
-    console.log("Message sent: %s", info.messageId);
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+async function issueToken(ctx, email) {
+    const user = ctx.database.model('User', user_schema);
+    if (await user.find({email}).exec()) {
+        return jwt.sign(user, ctx.jwt_secret, null, null);
+    } else {
+        return null;
+    }
 }
 
-main().catch(console.error);
+function issueNextToken(ctx, email, code) {
+    const next_token_secret = `${ctx.jwt_secret}_${code}`;
+    return jwt.sign({email}, next_token_secret, null, null);
+}
+
+function validate(_, token) {
+    try {
+        return jwt.verify(token, ctx.jwt_secret, null, null);
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
+}
+
+module.exports = {issueToken, issueNextToken, validate}

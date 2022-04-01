@@ -2,28 +2,23 @@
 
 const nodemailer = require("nodemailer");
 
-async function main() {
-    let testAccount = await nodemailer.createTestAccount();
-    let transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-            user: testAccount.user,
-            pass: testAccount.pass,
-        },
-    });
+const transporter = nodemailer.createTransport({
+    host: process.env.MAIL_SMTP_HOST,
+    port: process.env.MAIL_SMTP_PORT,
+    secure: false,
+    auth: process.env.MAIL_SMTP_USERNAME ? {
+        user: process.env.MAIL_SMTP_USERNAME,
+        pass: process.env.MAIL_SMTP_PASSWORD,
+    } : null,
+});
 
-    let info = await transporter.sendMail({
-        from: '"Fred Foo 👻" <foo@example.com>',
-        to: "bar@example.com, baz@example.com",
-        subject: "Hello ✔",
-        text: "Hello world?",
-        html: "<b>Hello world?</b>",
+module.exports = function (template, data) {
+    const {subject, text, html} = require(`./templates/${template}.js`);
+    return transporter.sendMail({
+        from: process.env.MAIL_SMTP_FROM,
+        to: data.to,
+        subject: subject(data),
+        text: text(data),
+        html: html(data),
     });
-
-    console.log("Message sent: %s", info.messageId);
-    console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
 }
-
-main().catch(console.error);
