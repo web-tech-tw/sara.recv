@@ -7,6 +7,8 @@
     "main": "app.js",
     "scripts": {
         "new-secret": "node new_secret.js",
+        "dev-database-ui": "docker run --network=host --rm -e ME_CONFIG_MONGODB_SERVER=localhost mongo-express",
+        "dev-database": "docker run --network=host --rm mongo",
         "dev": "nodemon app.js",
         "start": "node app.js"
     },

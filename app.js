@@ -8,7 +8,6 @@ const SECRET_FILENAME = 'secret.key';
 const fs = require('fs')
 const crypto = require('crypto');
 const express = require('express');
-const mongoose = require('mongoose');
 const http_status = require('http-status-codes');
 const email_validator = require('email-validator');
 
@@ -32,7 +31,8 @@ if (ctx.jwt_secret.length < 2048) {
 }
 // Check end
 
-ctx.database = mongoose.connect(process.env.MONGODB_URI);
+ctx.database = require('mongoose')
+void (ctx.database.connect(process.env.MONGODB_URI));
 
 const app = express();
 
@@ -42,33 +42,36 @@ app.get('/', (req, res) => {
     res.send(APP_NAME)
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     if (!("email" in req.body)) {
         res.status(http_status.BAD_REQUEST).end();
     } else if (email_validator.validate(req.body.email)) {
         const code = crypto.randomInt(999999);
         emailHandler('login', {
+            website: process.env.WEBSITE_URL,
             to: req.body.email,
             ip_address: req.ip,
             code
-        });
-        res.send({
-            next_token: tokenHandler.issueNextToken(ctx, req.body.email, code)
-        });
+        }).catch(console.error);
+        const next_token = await tokenHandler.issueNextToken(ctx, code, req.body.email);
+        res.send({next_token});
     } else {
         res.status(http_status.FORBIDDEN).end();
     }
 });
 
-app.post('/login/verify', (req, res) => {
-    if (!("email" in req.body && "code" in req.body)) {
+app.post('/login/verify', async (req, res) => {
+    if (("code" in req.body) && !("next_token" in req.body)) {
         res.status(http_status.BAD_REQUEST).end();
-    } else if (email_validator.validate(req.body.email)) {
-        const token = tokenHandler.issueToken(ctx, req.body.email);
-        res.send({token});
-    } else {
-        res.status(http_status.FORBIDDEN).end();
+        return;
     }
+    const next_token = tokenHandler.validateNextToken(ctx, req.body.code, req.body.next_token);
+    if (!next_token) {
+        res.status(http_status.FORBIDDEN).end();
+        return;
+    }
+    const token = await tokenHandler.issueToken(ctx, next_token.email);
+    res.send({token});
 })
 
 app.post('/register', (req, res) => {
