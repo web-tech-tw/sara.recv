@@ -70,7 +70,7 @@ app.post('/login/verify', async (req, res) => {
         res.status(http_status.FORBIDDEN).end();
         return;
     }
-    const token = await tokenHandler.issueToken(ctx, next_token.email);
+    const token = await tokenHandler.issueAuthToken(ctx, next_token.email);
     res.send({token});
 })
 
