@@ -31,7 +31,10 @@ app.post('/login', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    if (!(await User.findOne({email: req.body.email}).exec())) return null;
+    if (!(await User.findOne({email: req.body.email}).exec())) {
+        res.status(http_status.BAD_REQUEST).end();
+        return;
+    }
     const code = crypto.randomInt(100000, 999999);
     const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
     util.email('login', data).catch(console.error);
@@ -51,7 +54,10 @@ app.post('/login/verify', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    if (!(await User.findOne({email: req.body.email}).exec())) return null;
+    if (!(await User.findOne({email: req.body.email}).exec())) {
+        res.status(http_status.BAD_REQUEST).end();
+        return;
+    }
     const token = await util.token.issueAuthToken(ctx, {email: req.body.email});
     res.send({token});
 })
@@ -65,7 +71,10 @@ app.post('/register', async (req, res) => {
     const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
     util.email('register', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
-    if (await User.findOne({email: req.body.email}).exec()) return null;
+    if (await User.findOne({email: req.body.email}).exec()) {
+        res.status(http_status.BAD_REQUEST).end();
+        return;
+    }
     const metadata = {nickname: req.body.nickname, email: req.body.email};
     const register_token = await util.token.issueCodeToken(ctx, code, metadata);
     res.send({register_token});
@@ -82,7 +91,11 @@ app.post('/register/verify', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    if (await User.findOne({email: register_token.email}).exec()) return null;
+    if (await User.findOne({email: register_token.email}).exec()) {
+        res.status(http_status.BAD_REQUEST).end();
+        return;
+    }
+    console.log(123)
     const user = await (new User(register_token)).save();
     const token = await util.token.issueAuthToken(ctx, user);
     res.send({token});
