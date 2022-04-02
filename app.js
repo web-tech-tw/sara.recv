@@ -26,19 +26,18 @@ app.get('/', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    if (!("email" in req.body)) {
+    if (!("email" in req.body && email_validator.validate(req.body.email))) {
         res.status(http_status.BAD_REQUEST).end();
-    } else if (email_validator.validate(req.body.email)) {
-        const code = crypto.randomInt(100000, 999999);
-        const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
-        util.email('login', data).catch(console.error);
-        const User = ctx.database.model('User', user_schema);
-        if (!(await User.findOne({email: req.body.email}).exec())) return null;
-        const next_token = await util.token.issueCodeToken(ctx, code, {email: req.body.email});
-        res.send({next_token});
-    } else {
-        res.status(http_status.FORBIDDEN).end();
+        return;
     }
+    const User = ctx.database.model('User', user_schema);
+    if (!(await User.findOne({email: req.body.email}).exec())) return null;
+    const code = crypto.randomInt(100000, 999999);
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
+    util.email('login', data).catch(console.error);
+    const metadata = {email: req.body.email};
+    const next_token = await util.token.issueCodeToken(ctx, code, metadata);
+    res.send({next_token});
 });
 
 app.post('/login/verify', async (req, res) => {
@@ -58,19 +57,18 @@ app.post('/login/verify', async (req, res) => {
 })
 
 app.post('/register', async (req, res) => {
-    if (!("email" in req.body)) {
+    if (!(("nickname" in req.body && "email" in req.body && email_validator.validate(req.body.email)))) {
         res.status(http_status.BAD_REQUEST).end();
-    } else if (email_validator.validate(req.body.email)) {
-        const code = crypto.randomInt(1000000, 9999999);
-        const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
-        util.email('register', data).catch(console.error);
-        const User = ctx.database.model('User', user_schema);
-        if (await User.findOne({email: req.body.email}).exec()) return null;
-        const register_token = await util.token.issueCodeToken(ctx, code, {email: req.body.email});
-        res.send({register_token});
-    } else {
-        res.status(http_status.FORBIDDEN).end();
+        return;
     }
+    const code = crypto.randomInt(1000000, 9999999);
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
+    util.email('register', data).catch(console.error);
+    const User = ctx.database.model('User', user_schema);
+    if (await User.findOne({email: req.body.email}).exec()) return null;
+    const metadata = {nickname: req.body.nickname, email: req.body.email};
+    const register_token = await util.token.issueCodeToken(ctx, code, metadata);
+    res.send({register_token});
 });
 
 app.post('/register/verify', async (req, res) => {

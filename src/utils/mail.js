@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 });
 
 module.exports = function (template, data) {
-    const {subject, text, html} = require(`./templates/mail/${template}.js`);
+    const {subject, text, html} = require(`../templates/mail/${template}.js`);
     return transporter.sendMail({
         from: process.env.MAIL_SMTP_FROM,
         to: data.to,
