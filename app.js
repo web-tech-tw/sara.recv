@@ -54,7 +54,7 @@ app.post('/login/verify', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    const user = await User.findOne({email: next_token.email}).exec();
+    const user = await User.findOne({email: next_token.user.email}).exec();
     if (!user) {
         res.status(http_status.NOT_FOUND).end();
         return;
@@ -93,7 +93,7 @@ app.post('/register/verify', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    if (await User.findOne({email: register_token.email}).exec()) {
+    if (await User.findOne({email: register_token.user.email}).exec()) {
         res.status(http_status.CONFLICT).end();
         return;
     }
