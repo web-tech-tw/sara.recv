@@ -156,12 +156,17 @@ app.post('/profile/email', async (req, res) => {
 });
 
 app.post('/profile/email/verify', async (req, res) => {
+    const token_data = util.token.validateAuthToken(req.header('Authorization'));
+    if (!token_data) {
+        res.status(http_status.UNAUTHORIZED).end();
+        return;
+    }
     if (!("code" in req.body && "update_email_token" in req.body && req.body.code.length === 8)) {
         res.status(http_status.BAD_REQUEST).end();
         return;
     }
     const update_email_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
-    if (!update_email_token_data) {
+    if (!update_email_token_data || update_email_token_data.sub !== token_data.sub) {
         res.status(http_status.UNAUTHORIZED).end();
         return;
     }
