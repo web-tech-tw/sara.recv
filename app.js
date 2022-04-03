@@ -22,7 +22,7 @@ const
     };
 
 app.get('/', (req, res) => {
-    res.send(constant.APP_NAME)
+    res.redirect(http_status.MOVED_PERMANENTLY, process.env.WEBSITE_URL);
 });
 
 app.post('/login', async (req, res) => {
@@ -115,7 +115,7 @@ app.post('/verify', (req, res) => {
 });
 
 app.put('/profile', async (req, res) => {
-    const token_data = util.token.validateAuthToken(req.header('Authorization'));
+    const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
     if (!token_data) {
         res.status(http_status.UNAUTHORIZED).end();
         return;
@@ -126,14 +126,14 @@ app.put('/profile', async (req, res) => {
         res.status(http_status.NOT_FOUND).end();
         return;
     }
-    user.nickname = req.nickname || token_data.user.nickname;
+    user.nickname = req.body.nickname || token_data.user.nickname;
     const metadata = await user.save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
 });
 
-app.post('/profile/email', async (req, res) => {
-    const token_data = util.token.validateAuthToken(req.header('Authorization'));
+app.put('/profile/email', async (req, res) => {
+    const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
     if (!token_data) {
         res.status(http_status.UNAUTHORIZED).end();
         return;
@@ -156,7 +156,7 @@ app.post('/profile/email', async (req, res) => {
 });
 
 app.post('/profile/email/verify', async (req, res) => {
-    const token_data = util.token.validateAuthToken(req.header('Authorization'));
+    const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
     if (!token_data) {
         res.status(http_status.UNAUTHORIZED).end();
         return;
