@@ -121,19 +121,58 @@ app.put('/profile', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    const metadata = await (new User(token_data.user)).save();
+    const user = await User.findOne({_id: token_data.sub}).exec();
+    if (!user) {
+        res.status(http_status.NOT_FOUND).end();
+        return;
+    }
+    user.nickname = req.nickname || token_data.user.nickname;
+    const metadata = await user.save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
 });
 
-app.put('/profile/email', async (req, res) => {
+app.post('/profile/email', async (req, res) => {
     const token_data = util.token.validateAuthToken(req.header('Authorization'));
     if (!token_data) {
         res.status(http_status.UNAUTHORIZED).end();
         return;
     }
+    if (!(("email" in req.body && email_validator.validate(req.body.email)))) {
+        res.status(http_status.BAD_REQUEST).end();
+        return;
+    }
+    const code = crypto.randomInt(10000000, 99999999);
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
+    util.email('update_email', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
-    const metadata = await (new User(token_data.user)).save();
+    if (await User.findOne({email: req.body.email}).exec()) {
+        res.status(http_status.CONFLICT).end();
+        return;
+    }
+    const metadata = {_id: token_data.sub, email: req.body.email};
+    const update_email_token = await util.token.issueCodeToken(ctx, code, metadata);
+    res.send({update_email_token});
+});
+
+app.post('/profile/email/verify', async (req, res) => {
+    if (!("code" in req.body && "update_email_token" in req.body && req.body.code.length === 8)) {
+        res.status(http_status.BAD_REQUEST).end();
+        return;
+    }
+    const update_email_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
+    if (!update_email_token_data) {
+        res.status(http_status.UNAUTHORIZED).end();
+        return;
+    }
+    const User = ctx.database.model('User', user_schema);
+    const user = await User.findOne({_id: update_email_token_data.sub}).exec();
+    if (!user) {
+        res.status(http_status.NOT_FOUND).end();
+        return;
+    }
+    user.email = update_email_token_data.user.email;
+    const metadata = await user.save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
 });
