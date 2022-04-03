@@ -19,7 +19,7 @@ const
     util = {
         email: require('./src/utils/mail'),
         token: require('./src/utils/token')
-    }
+    };
 
 app.get('/', (req, res) => {
     res.send(constant.APP_NAME)
@@ -44,7 +44,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/login/verify', async (req, res) => {
-    if (("code" in req.body) && !("next_token" in req.body)) {
+    if (!("code" in req.body && "next_token" in req.body && req.body.code.length === 6)) {
         res.status(http_status.BAD_REQUEST).end();
         return;
     }
@@ -54,11 +54,13 @@ app.post('/login/verify', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    if (!(await User.findOne({email: req.body.email}).exec())) {
-        res.status(http_status.BAD_REQUEST).end();
+    const user = await User.findOne({email: next_token.email}).exec();
+    if (!user) {
+        res.status(http_status.NOT_FOUND).end();
         return;
     }
-    const token = await util.token.issueAuthToken(ctx, {email: req.body.email});
+    const metadata = user.toObject();
+    const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
 })
 
@@ -81,7 +83,7 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/register/verify', async (req, res) => {
-    if (("code" in req.body) && !("register_token" in req.body)) {
+    if (!("code" in req.body && "register_token" in req.body && req.body.code.length === 7)) {
         res.status(http_status.BAD_REQUEST).end();
         return;
     }
@@ -92,12 +94,11 @@ app.post('/register/verify', async (req, res) => {
     }
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: register_token.email}).exec()) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.status(http_status.CONFLICT).end();
         return;
     }
-    console.log(123)
-    const user = await (new User(register_token)).save();
-    const token = await util.token.issueAuthToken(ctx, user);
+    const metadata = await (new User(register_token)).save();
+    const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
 })
 
