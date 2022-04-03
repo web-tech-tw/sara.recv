@@ -97,7 +97,7 @@ app.post('/register/verify', async (req, res) => {
         res.status(http_status.CONFLICT).end();
         return;
     }
-    const metadata = await (new User(register_token)).save();
+    const metadata = await (new User(register_token.user)).save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
 })

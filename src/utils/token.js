@@ -22,7 +22,7 @@ async function issueAuthToken(ctx, user) {
 
 async function issueCodeToken(ctx, code, user) {
     const next_token_secret = `${ctx.jwt_secret}_${code}`;
-    const payload = {sub: user.email, jti: uuidV4(null, null, null)};
+    const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
     return jwt.sign(payload, next_token_secret, general_issue_options(), null);
 }
 
