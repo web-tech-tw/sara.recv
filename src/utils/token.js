@@ -1,10 +1,11 @@
 "use strict";
 
 const jwt = require('jsonwebtoken');
+const {v4: uuidV4} = require('uuid');
 
 const constant = require('../init/const');
 
-const general_issue_options = {
+const general_issue_options = () => ({
     algorithm: "HS256",
     expiresIn: "7d",
     notBefore: "500ms",
@@ -12,17 +13,17 @@ const general_issue_options = {
     issuer: constant.APP_NAME,
     noTimestamp: false,
     mutatePayload: false,
-};
+});
 
 async function issueAuthToken(ctx, user) {
-    const payload = {user};
-    return jwt.sign(payload, ctx.jwt_secret, general_issue_options, null);
+    const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
+    return jwt.sign(payload, ctx.jwt_secret, general_issue_options(), null);
 }
 
 async function issueCodeToken(ctx, code, user) {
     const next_token_secret = `${ctx.jwt_secret}_${code}`;
-    const payload = {user};
-    return jwt.sign(payload, next_token_secret, general_issue_options, null);
+    const payload = {sub: user.email, jti: uuidV4(null, null, null)};
+    return jwt.sign(payload, next_token_secret, general_issue_options(), null);
 }
 
 function validateAuthToken(ctx, token) {
