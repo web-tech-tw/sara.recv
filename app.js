@@ -32,7 +32,7 @@ app.post('/login', async (req, res) => {
     }
     const User = ctx.database.model('User', user_schema);
     if (!(await User.findOne({email: req.body.email}).exec())) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.status(http_status.NOT_FOUND).end();
         return;
     }
     const code = crypto.randomInt(100000, 999999);
@@ -50,7 +50,7 @@ app.post('/login/verify', async (req, res) => {
     }
     const next_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.next_token);
     if (!next_token_data) {
-        res.status(http_status.FORBIDDEN).end();
+        res.status(http_status.UNAUTHORIZED).end();
         return;
     }
     const User = ctx.database.model('User', user_schema);
@@ -74,7 +74,7 @@ app.post('/register', async (req, res) => {
     util.email('register', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: req.body.email}).exec()) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.status(http_status.CONFLICT).end();
         return;
     }
     const metadata = {nickname: req.body.nickname, email: req.body.email};
@@ -89,7 +89,7 @@ app.post('/register/verify', async (req, res) => {
     }
     const register_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.register_token);
     if (!register_token_data) {
-        res.status(http_status.FORBIDDEN).end();
+        res.status(http_status.UNAUTHORIZED).end();
         return;
     }
     const User = ctx.database.model('User', user_schema);
@@ -110,7 +110,7 @@ app.post('/verify', (req, res) => {
     res.status(
         util.token.validateAuthToken(ctx, req.body.token)
             ? http_status.OK
-            : http_status.FORBIDDEN
+            : http_status.UNAUTHORIZED
     ).end();
 });
 
