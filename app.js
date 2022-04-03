@@ -62,7 +62,7 @@ app.post('/login/verify', async (req, res) => {
     const metadata = user.toObject();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
-})
+});
 
 app.post('/register', async (req, res) => {
     if (!(("nickname" in req.body && "email" in req.body && email_validator.validate(req.body.email)))) {
@@ -100,7 +100,35 @@ app.post('/register/verify', async (req, res) => {
     const metadata = await (new User(register_token.user)).save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
-})
+});
+
+app.post('/verify', (req, res) => {
+    if (!("token" in req.body)) {
+        res.status(http_status.BAD_REQUEST).end();
+        return;
+    }
+    if (util.token.validateAuthToken(ctx, req.body.token)) {
+        res.status(http_status.OK).end();
+    } else {
+        res.status(http_status.FORBIDDEN).end();
+    }
+});
+
+app.put('/profile', (req, res) => {
+    if (!util.token.validateAuthToken(req.header('Authorization'))) {
+        res.status(http_status.UNAUTHORIZED).end();
+        return;
+    }
+    res.status(http_status.FORBIDDEN).end();
+});
+
+app.put('/email', (req, res) => {
+    if (!util.token.validateAuthToken(req.header('Authorization'))) {
+        res.status(http_status.UNAUTHORIZED).end();
+        return;
+    }
+    res.status(http_status.FORBIDDEN).end();
+});
 
 app.listen(process.env.HTTP_PORT, () => {
     console.log(constant.APP_NAME)
