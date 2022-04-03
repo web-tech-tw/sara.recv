@@ -48,13 +48,13 @@ app.post('/login/verify', async (req, res) => {
         res.status(http_status.BAD_REQUEST).end();
         return;
     }
-    const next_token = util.token.validateCodeToken(ctx, req.body.code, req.body.next_token);
-    if (!next_token) {
+    const next_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.next_token);
+    if (!next_token_data) {
         res.status(http_status.FORBIDDEN).end();
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    const user = await User.findOne({email: next_token.sub}).exec();
+    const user = await User.findOne({email: next_token_data.sub}).exec();
     if (!user) {
         res.status(http_status.NOT_FOUND).end();
         return;
@@ -87,17 +87,17 @@ app.post('/register/verify', async (req, res) => {
         res.status(http_status.BAD_REQUEST).end();
         return;
     }
-    const register_token = util.token.validateCodeToken(ctx, req.body.code, req.body.register_token);
-    if (!register_token) {
+    const register_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.register_token);
+    if (!register_token_data) {
         res.status(http_status.FORBIDDEN).end();
         return;
     }
     const User = ctx.database.model('User', user_schema);
-    if (await User.findOne({email: register_token.sub}).exec()) {
+    if (await User.findOne({email: register_token_data.sub}).exec()) {
         res.status(http_status.CONFLICT).end();
         return;
     }
-    const metadata = await (new User(register_token.user)).save();
+    const metadata = await (new User(register_token_data.user)).save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
 });
@@ -107,27 +107,35 @@ app.post('/verify', (req, res) => {
         res.status(http_status.BAD_REQUEST).end();
         return;
     }
-    if (util.token.validateAuthToken(ctx, req.body.token)) {
-        res.status(http_status.OK).end();
-    } else {
-        res.status(http_status.FORBIDDEN).end();
-    }
+    res.status(
+        util.token.validateAuthToken(ctx, req.body.token)
+            ? http_status.OK
+            : http_status.FORBIDDEN
+    ).end();
 });
 
-app.put('/profile', (req, res) => {
-    if (!util.token.validateAuthToken(req.header('Authorization'))) {
+app.put('/profile', async (req, res) => {
+    const token_data = util.token.validateAuthToken(req.header('Authorization'));
+    if (!token_data) {
         res.status(http_status.UNAUTHORIZED).end();
         return;
     }
-    res.status(http_status.FORBIDDEN).end();
+    const User = ctx.database.model('User', user_schema);
+    const metadata = await (new User(token_data.user)).save();
+    const token = await util.token.issueAuthToken(ctx, metadata);
+    res.send({token});
 });
 
-app.put('/email', (req, res) => {
-    if (!util.token.validateAuthToken(req.header('Authorization'))) {
+app.put('/profile/email', async (req, res) => {
+    const token_data = util.token.validateAuthToken(req.header('Authorization'));
+    if (!token_data) {
         res.status(http_status.UNAUTHORIZED).end();
         return;
     }
-    res.status(http_status.FORBIDDEN).end();
+    const User = ctx.database.model('User', user_schema);
+    const metadata = await (new User(token_data.user)).save();
+    const token = await util.token.issueAuthToken(ctx, metadata);
+    res.send({token});
 });
 
 app.listen(process.env.HTTP_PORT, () => {
