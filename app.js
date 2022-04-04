@@ -28,7 +28,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/login', async (req, res) => {
-    if (!("email" in req.body && email_validator.validate(req.body.email))) {
+    if (!(req?.body?.email && email_validator.validate(req.body.email))) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
@@ -38,7 +38,7 @@ app.post('/login', async (req, res) => {
         return;
     }
     const code = crypto.randomInt(100000, 999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.clientIp, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req?.clientIp || req.ip, code};
     util.email('login', data).catch(console.error);
     const metadata = {email: req.body.email};
     const next_token = await util.token.issueCodeToken(ctx, code, metadata);
@@ -46,7 +46,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.post('/login/verify', async (req, res) => {
-    if (!("code" in req.body && "next_token" in req.body && req.body.code.length === 6)) {
+    if (!(req?.body?.code && req?.body?.next_token && req.body.code.length === 6)) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
@@ -71,12 +71,12 @@ app.post('/login/verify', async (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-    if (!(("nickname" in req.body && "email" in req.body && email_validator.validate(req.body.email)))) {
+    if (!(req?.body?.nickname && req?.body?.email && email_validator.validate(req.body.email))) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
     const code = crypto.randomInt(1000000, 9999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.clientIp, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req?.clientIp || req.ip, code};
     util.email('register', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: req.body.email}).exec()) {
@@ -89,7 +89,7 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/register/verify', async (req, res) => {
-    if (!("code" in req.body && "register_token" in req.body && req.body.code.length === 7)) {
+    if (!(req?.body?.code && req?.body?.register_token && req.body.code.length === 7)) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
@@ -113,7 +113,7 @@ app.post('/register/verify', async (req, res) => {
 });
 
 app.post('/verify', (req, res) => {
-    if (!("token" in req.body)) {
+    if (!(req?.body?.token)) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
@@ -136,7 +136,7 @@ app.put('/profile', async (req, res) => {
         res.sendStatus(http_status.NOT_FOUND);
         return;
     }
-    user.nickname = req.body.nickname || token_data.user.nickname;
+    user.nickname = req?.body?.nickname || token_data.user.nickname;
     const metadata = await user.save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
@@ -148,12 +148,12 @@ app.put('/profile/email', async (req, res) => {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
-    if (!(("email" in req.body && email_validator.validate(req.body.email)))) {
+    if (!(req?.body?.email && email_validator.validate(req.body.email))) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
     const code = crypto.randomInt(10000000, 99999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.clientIp, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req?.clientIp || req.ip, code};
     util.email('update_email', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: req.body.email}).exec()) {
@@ -171,7 +171,7 @@ app.post('/profile/email/verify', async (req, res) => {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
-    if (!("code" in req.body && "update_email_token" in req.body && req.body.code.length === 8)) {
+    if (!(req?.body?.code && req?.body?.update_email_token && req.body.code.length === 8)) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
