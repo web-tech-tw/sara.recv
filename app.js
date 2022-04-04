@@ -18,7 +18,7 @@ const
         jwt_secret: require('./src/init/security')
     },
     util = {
-        now: () => new Date().getTime(),
+        now: () => Math.floor(new Date().getTime() / 1000),
         email: require('./src/utils/mail'),
         token: require('./src/utils/token')
     };
