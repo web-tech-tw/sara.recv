@@ -21,6 +21,7 @@
         "mongoose": "^6.2.9",
         "node-cache": "^5.1.2",
         "nodemailer": "^6.7.3",
+        "request-ip": "^2.1.3",
         "uuid": "^8.3.2"
     },
     "devDependencies": {

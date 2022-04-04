@@ -38,7 +38,7 @@ app.post('/login', async (req, res) => {
         return;
     }
     const code = crypto.randomInt(100000, 999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.clientIp, code};
     util.email('login', data).catch(console.error);
     const metadata = {email: req.body.email};
     const next_token = await util.token.issueCodeToken(ctx, code, metadata);
@@ -76,7 +76,7 @@ app.post('/register', async (req, res) => {
         return;
     }
     const code = crypto.randomInt(1000000, 9999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.clientIp, code};
     util.email('register', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: req.body.email}).exec()) {
@@ -153,7 +153,7 @@ app.put('/profile/email', async (req, res) => {
         return;
     }
     const code = crypto.randomInt(10000000, 99999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.ip, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req.clientIp, code};
     util.email('update_email', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: req.body.email}).exec()) {
