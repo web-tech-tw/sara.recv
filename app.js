@@ -196,7 +196,7 @@ app.post('/profile/email/verify', async (req, res) => {
     res.send({token});
 });
 
-app.listen(process.env.HTTP_PORT, () => {
+app.listen(process.env.HTTP_PORT, process.env.HTTP_HOSTNAME, () => {
     console.log(constant.APP_NAME)
     console.log('====')
     console.log('Application is listening at')
