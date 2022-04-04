@@ -13,6 +13,8 @@ const
     app = require('./src/init/express'),
     constant = require('./src/init/const'),
     ctx = {
+        now: () => Math.floor(new Date().getTime() / 1000),
+        cache: require('./src/init/cache'),
         database: require('./src/init/database'),
         jwt_secret: require('./src/init/security')
     },
@@ -27,12 +29,12 @@ app.get('/', (req, res) => {
 
 app.post('/login', async (req, res) => {
     if (!("email" in req.body && email_validator.validate(req.body.email))) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
     const User = ctx.database.model('User', user_schema);
     if (!(await User.findOne({email: req.body.email}).exec())) {
-        res.status(http_status.NOT_FOUND).end();
+        res.sendStatus(http_status.NOT_FOUND);
         return;
     }
     const code = crypto.randomInt(100000, 999999);
@@ -45,18 +47,22 @@ app.post('/login', async (req, res) => {
 
 app.post('/login/verify', async (req, res) => {
     if (!("code" in req.body && "next_token" in req.body && req.body.code.length === 6)) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
     const next_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.next_token);
     if (!next_token_data) {
-        res.status(http_status.UNAUTHORIZED).end();
+        res.sendStatus(http_status.UNAUTHORIZED);
+        return;
+    }
+    if (util.token.isGone(ctx, next_token_data)) {
+        res.sendStatus(http_status.GONE);
         return;
     }
     const User = ctx.database.model('User', user_schema);
     const user = await User.findOne({email: next_token_data.sub}).exec();
     if (!user) {
-        res.status(http_status.NOT_FOUND).end();
+        res.sendStatus(http_status.NOT_FOUND);
         return;
     }
     const metadata = user.toObject();
@@ -66,7 +72,7 @@ app.post('/login/verify', async (req, res) => {
 
 app.post('/register', async (req, res) => {
     if (!(("nickname" in req.body && "email" in req.body && email_validator.validate(req.body.email)))) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
     const code = crypto.randomInt(1000000, 9999999);
@@ -74,7 +80,7 @@ app.post('/register', async (req, res) => {
     util.email('register', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: req.body.email}).exec()) {
-        res.status(http_status.CONFLICT).end();
+        res.sendStatus(http_status.CONFLICT);
         return;
     }
     const metadata = {nickname: req.body.nickname, email: req.body.email};
@@ -84,17 +90,21 @@ app.post('/register', async (req, res) => {
 
 app.post('/register/verify', async (req, res) => {
     if (!("code" in req.body && "register_token" in req.body && req.body.code.length === 7)) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
     const register_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.register_token);
     if (!register_token_data) {
-        res.status(http_status.UNAUTHORIZED).end();
+        res.sendStatus(http_status.UNAUTHORIZED);
+        return;
+    }
+    if (util.token.isGone(ctx, register_token_data)) {
+        res.sendStatus(http_status.GONE);
         return;
     }
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: register_token_data.sub}).exec()) {
-        res.status(http_status.CONFLICT).end();
+        res.sendStatus(http_status.CONFLICT);
         return;
     }
     const metadata = await (new User(register_token_data.user)).save();
@@ -104,26 +114,26 @@ app.post('/register/verify', async (req, res) => {
 
 app.post('/verify', (req, res) => {
     if (!("token" in req.body)) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
-    res.status(
+    res.sendStatus(
         util.token.validateAuthToken(ctx, req.body.token)
             ? http_status.OK
             : http_status.UNAUTHORIZED
-    ).end();
+    );
 });
 
 app.put('/profile', async (req, res) => {
     const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
     if (!token_data) {
-        res.status(http_status.UNAUTHORIZED).end();
+        res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
     const User = ctx.database.model('User', user_schema);
     const user = await User.findOne({_id: token_data.sub}).exec();
     if (!user) {
-        res.status(http_status.NOT_FOUND).end();
+        res.sendStatus(http_status.NOT_FOUND);
         return;
     }
     user.nickname = req.body.nickname || token_data.user.nickname;
@@ -135,11 +145,11 @@ app.put('/profile', async (req, res) => {
 app.put('/profile/email', async (req, res) => {
     const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
     if (!token_data) {
-        res.status(http_status.UNAUTHORIZED).end();
+        res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
     if (!(("email" in req.body && email_validator.validate(req.body.email)))) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
     const code = crypto.randomInt(10000000, 99999999);
@@ -147,7 +157,7 @@ app.put('/profile/email', async (req, res) => {
     util.email('update_email', data).catch(console.error);
     const User = ctx.database.model('User', user_schema);
     if (await User.findOne({email: req.body.email}).exec()) {
-        res.status(http_status.CONFLICT).end();
+        res.sendStatus(http_status.CONFLICT);
         return;
     }
     const metadata = {_id: token_data.sub, email: req.body.email};
@@ -158,22 +168,26 @@ app.put('/profile/email', async (req, res) => {
 app.post('/profile/email/verify', async (req, res) => {
     const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
     if (!token_data) {
-        res.status(http_status.UNAUTHORIZED).end();
+        res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
     if (!("code" in req.body && "update_email_token" in req.body && req.body.code.length === 8)) {
-        res.status(http_status.BAD_REQUEST).end();
+        res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
     const update_email_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
     if (!update_email_token_data || update_email_token_data.sub !== token_data.sub) {
-        res.status(http_status.UNAUTHORIZED).end();
+        res.sendStatus(http_status.UNAUTHORIZED);
+        return;
+    }
+    if (util.token.isGone(ctx, update_email_token_data)) {
+        res.sendStatus(http_status.GONE);
         return;
     }
     const User = ctx.database.model('User', user_schema);
     const user = await User.findOne({_id: update_email_token_data.sub}).exec();
     if (!user) {
-        res.status(http_status.NOT_FOUND).end();
+        res.sendStatus(http_status.NOT_FOUND);
         return;
     }
     user.email = update_email_token_data.user.email;
