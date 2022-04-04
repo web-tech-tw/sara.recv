@@ -13,12 +13,12 @@ const
     app = require('./src/init/express'),
     constant = require('./src/init/const'),
     ctx = {
+        now: () => Math.floor(new Date().getTime() / 1000),
         cache: require('./src/init/cache'),
         database: require('./src/init/database'),
         jwt_secret: require('./src/init/security')
     },
     util = {
-        now: () => Math.floor(new Date().getTime() / 1000),
         email: require('./src/utils/mail'),
         token: require('./src/utils/token')
     };
@@ -55,11 +55,9 @@ app.post('/login/verify', async (req, res) => {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
-    if (ctx.cache.has(next_token_data.jti)) {
+    if (util.token.isGone(ctx, next_token_data)) {
         res.sendStatus(http_status.GONE);
         return;
-    } else {
-        ctx.cache.set(next_token_data.jti, next_token_data, next_token_data.exp - util.now());
     }
     const User = ctx.database.model('User', user_schema);
     const user = await User.findOne({email: next_token_data.sub}).exec();
@@ -98,6 +96,10 @@ app.post('/register/verify', async (req, res) => {
     const register_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.register_token);
     if (!register_token_data) {
         res.sendStatus(http_status.UNAUTHORIZED);
+        return;
+    }
+    if (util.token.isGone(ctx, register_token_data)) {
+        res.sendStatus(http_status.GONE);
         return;
     }
     const User = ctx.database.model('User', user_schema);
@@ -176,6 +178,10 @@ app.post('/profile/email/verify', async (req, res) => {
     const update_email_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
     if (!update_email_token_data || update_email_token_data.sub !== token_data.sub) {
         res.sendStatus(http_status.UNAUTHORIZED);
+        return;
+    }
+    if (util.token.isGone(ctx, update_email_token_data)) {
+        res.sendStatus(http_status.GONE);
         return;
     }
     const User = ctx.database.model('User', user_schema);

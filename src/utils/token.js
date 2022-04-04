@@ -45,9 +45,18 @@ function validateCodeToken(ctx, code, token) {
     }
 }
 
+function isGone(ctx, token_data) {
+    if (ctx.cache.has(token_data.jti)) {
+        return true;
+    }
+    ctx.cache.set(token_data.jti, token_data.iat, token_data.exp - ctx.now());
+    return false;
+}
+
 module.exports = {
     issueAuthToken,
     issueCodeToken,
     validateAuthToken,
     validateCodeToken,
+    isGone,
 }
