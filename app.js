@@ -13,10 +13,12 @@ const
     app = require('./src/init/express'),
     constant = require('./src/init/const'),
     ctx = {
+        cache: require('./src/init/cache'),
         database: require('./src/init/database'),
         jwt_secret: require('./src/init/security')
     },
     util = {
+        now: () => new Date().getTime(),
         email: require('./src/utils/mail'),
         token: require('./src/utils/token')
     };
@@ -52,6 +54,12 @@ app.post('/login/verify', async (req, res) => {
     if (!next_token_data) {
         res.status(http_status.UNAUTHORIZED).end();
         return;
+    }
+    if (ctx.cache.has(next_token_data.jti)) {
+        res.sendStatus(http_status.GONE);
+        return;
+    } else {
+        ctx.cache.set(next_token_data.jti, next_token_data, next_token_data.exp - util.now());
     }
     const User = ctx.database.model('User', user_schema);
     const user = await User.findOne({email: next_token_data.sub}).exec();
