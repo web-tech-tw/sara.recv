@@ -113,16 +113,13 @@ app.post('/register/verify', async (req, res) => {
     res.send({token});
 });
 
-app.post('/verify', (req, res) => {
-    if (!(req?.body?.token)) {
-        res.sendStatus(http_status.BAD_REQUEST);
+app.get('/profile', async (req, res) => {
+    const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
+    if (!token_data) {
+        res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
-    res.sendStatus(
-        util.token.validateAuthToken(ctx, req.body.token)
-            ? http_status.OK
-            : http_status.UNAUTHORIZED
-    );
+    res.send({profile: token_data.user});
 });
 
 app.put('/profile', async (req, res) => {
