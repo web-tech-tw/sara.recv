@@ -14,7 +14,7 @@ const
         now: () => Math.floor(new Date().getTime() / 1000),
         cache: require('./src/init/cache'),
         database: require('./src/init/database'),
-        jwt_secret: require('./src/init/security')
+        jwt_secret: require('./src/init/jwt_secret')
     },
     util = {
         email: require('./src/utils/mail'),

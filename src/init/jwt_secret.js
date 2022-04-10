@@ -1,5 +1,4 @@
 "use strict";
-// JWT Security Check
 
 const fs = require('fs');
 
@@ -15,6 +14,8 @@ try {
         console.log(e)
     }
 }
+
+// JWT Security Check
 if (jwt_secret.length < 2048) {
     throw 'JWT secret IS NOT SAFE, please generate the new one with "npm run new-secret"';
 }
