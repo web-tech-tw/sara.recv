@@ -7,8 +7,6 @@ const
     http_status = require('http-status-codes'),
     email_validator = require('email-validator');
 
-const user_schema = require("./src/schemas/user");
-
 const
     app = require('./src/init/express'),
     constant = require('./src/init/const'),
@@ -21,6 +19,9 @@ const
     util = {
         email: require('./src/utils/mail'),
         token: require('./src/utils/token')
+    },
+    schema = {
+        user: require("./src/schemas/user")
     };
 
 app.get('/', (req, res) => {
@@ -32,7 +33,7 @@ app.post('/login', async (req, res) => {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
     }
-    const User = ctx.database.model('User', user_schema);
+    const User = ctx.database.model('User', schema.user);
     if (!(await User.findOne({email: req.body.email}).exec())) {
         res.sendStatus(http_status.NOT_FOUND);
         return;
@@ -59,7 +60,7 @@ app.post('/login/verify', async (req, res) => {
         res.sendStatus(http_status.GONE);
         return;
     }
-    const User = ctx.database.model('User', user_schema);
+    const User = ctx.database.model('User', schema.user);
     const user = await User.findOne({email: next_token_data.sub}).exec();
     if (!user) {
         res.sendStatus(http_status.NOT_FOUND);
@@ -78,7 +79,7 @@ app.post('/register', async (req, res) => {
     const code = crypto.randomInt(1000000, 9999999);
     const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req?.clientIp || req.ip, code};
     util.email('register', data).catch(console.error);
-    const User = ctx.database.model('User', user_schema);
+    const User = ctx.database.model('User', schema.user);
     if (await User.findOne({email: req.body.email}).exec()) {
         res.sendStatus(http_status.CONFLICT);
         return;
@@ -102,7 +103,7 @@ app.post('/register/verify', async (req, res) => {
         res.sendStatus(http_status.GONE);
         return;
     }
-    const User = ctx.database.model('User', user_schema);
+    const User = ctx.database.model('User', schema.user);
     if (await User.findOne({email: register_token_data.sub}).exec()) {
         res.sendStatus(http_status.CONFLICT);
         return;
@@ -130,7 +131,7 @@ app.put('/profile', async (req, res) => {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
-    const User = ctx.database.model('User', user_schema);
+    const User = ctx.database.model('User', schema.user);
     const user = await User.findOne({_id: token_data.sub}).exec();
     if (!user) {
         res.sendStatus(http_status.NOT_FOUND);
@@ -155,7 +156,7 @@ app.put('/profile/email', async (req, res) => {
     const code = crypto.randomInt(10000000, 99999999);
     const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req?.clientIp || req.ip, code};
     util.email('update_email', data).catch(console.error);
-    const User = ctx.database.model('User', user_schema);
+    const User = ctx.database.model('User', schema.user);
     if (await User.findOne({email: req.body.email}).exec()) {
         res.sendStatus(http_status.CONFLICT);
         return;
@@ -184,7 +185,7 @@ app.post('/profile/email/verify', async (req, res) => {
         res.sendStatus(http_status.GONE);
         return;
     }
-    const User = ctx.database.model('User', user_schema);
+    const User = ctx.database.model('User', schema.user);
     const user = await User.findOne({_id: update_email_token_data.sub}).exec();
     if (!user) {
         res.sendStatus(http_status.NOT_FOUND);
