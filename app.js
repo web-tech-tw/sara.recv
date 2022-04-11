@@ -24,7 +24,7 @@ const
         user: require("./src/schemas/user")
     },
     middleware = {
-        access: require('./src/utils/access'),
+        access: require('./src/middlewares/access'),
     };
 
 const app = require('./src/init/express')(ctx);
@@ -124,7 +124,7 @@ app.get('/profile', middleware.access(null), async (req, res) => {
 
 app.put('/profile', middleware.access(null), async (req, res) => {
     const User = ctx.database.model('User', schema.user);
-    const user = await User.findOne({_id: req.authenticated.sub}).exec();
+    const user = await User.findById(req.authenticated.sub).exec();
     if (!user) {
         res.sendStatus(http_status.NOT_FOUND);
         return;
@@ -168,7 +168,7 @@ app.post('/profile/email/verify', middleware.access(null), async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', schema.user);
-    const user = await User.findOne({_id: update_email_token_data.sub}).exec();
+    const user = await User.findById(update_email_token_data.sub).exec();
     if (!user) {
         res.sendStatus(http_status.NOT_FOUND);
         return;
@@ -177,6 +177,79 @@ app.post('/profile/email/verify', middleware.access(null), async (req, res) => {
     const metadata = await user.save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
+});
+
+app.get('/user', middleware.access('admin'), async (req, res) => {
+    if (!(req?.query?.user_id)) {
+        res.sendStatus(http_status.BAD_REQUEST);
+        return;
+    }
+    const User = ctx.database.model('User', schema.user);
+    try {
+        res.send(await User.findById(req.query.user_id).exec());
+    } catch (e) {
+        if (e.kind !== 'ObjectId') console.error(e);
+        res.sendStatus(http_status.BAD_REQUEST);
+    }
+});
+
+app.post('/user/role', middleware.access('admin'), async (req, res) => {
+    if (!(req?.body?.user_id && req?.body?.role)) {
+        res.sendStatus(http_status.BAD_REQUEST);
+        return;
+    }
+    const User = ctx.database.model('User', schema.user);
+    let user;
+    try {
+        user = await User.findById(req.body.user_id).exec();
+    } catch (e) {
+        if (e.kind !== 'ObjectId') console.error(e);
+        res.sendStatus(http_status.BAD_REQUEST);
+        return;
+    }
+    if (!user) {
+        res.sendStatus(http_status.NOT_FOUND);
+        return;
+    }
+    if (!Array.isArray(user?.roles)) {
+        user.roles = [req.body.role];
+    } else if (user.roles.includes(req.body.role)) {
+        res.sendStatus(http_status.CONFLICT);
+        return;
+    } else {
+        user.roles.push(req.body.role);
+    }
+    await user.save();
+    res.sendStatus(http_status.CREATED);
+});
+
+app.delete('/user/role', middleware.access('admin'), async (req, res) => {
+    if (!(req?.body?.user_id && req?.body?.role)) {
+        res.sendStatus(http_status.BAD_REQUEST);
+        return;
+    }
+    const User = ctx.database.model('User', schema.user);
+    let user;
+    try {
+        user = await User.findById(req.body.user_id).exec();
+    } catch (e) {
+        if (e.kind !== 'ObjectId') console.error(e);
+        res.sendStatus(http_status.BAD_REQUEST);
+        return;
+    }
+    if (!user) {
+        res.sendStatus(http_status.NOT_FOUND);
+        return;
+    }
+    if (Array.isArray(user?.roles) && user.roles.includes(req.body.role)) {
+        const index = user.roles.indexOf(req.body.role);
+        user.roles.splice(index, 1);
+    } else {
+        res.sendStatus(http_status.GONE);
+        return;
+    }
+    await user.save();
+    res.sendStatus(http_status.OK);
 });
 
 app.listen(process.env.HTTP_PORT, process.env.HTTP_HOSTNAME, () => {

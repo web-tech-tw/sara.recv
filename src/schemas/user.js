@@ -8,5 +8,6 @@ const ObjectId = Schema.ObjectId;
 module.exports = new Schema({
     id: ObjectId,
     email: String,
-    nickname: String
+    nickname: String,
+    roles: Array,
 });
