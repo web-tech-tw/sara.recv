@@ -8,7 +8,6 @@ const
     email_validator = require('email-validator');
 
 const
-    app = require('./src/init/express'),
     constant = require('./src/init/const'),
     ctx = {
         now: () => Math.floor(new Date().getTime() / 1000),
@@ -18,11 +17,14 @@ const
     },
     util = {
         email: require('./src/utils/mail'),
-        token: require('./src/utils/token')
+        token: require('./src/utils/token'),
+        ip_address: require('./src/utils/ip_address')
     },
     schema = {
         user: require("./src/schemas/user")
     };
+
+const app = require('./src/init/express')(ctx);
 
 app.get('/', (req, res) => {
     res.redirect(http_status.MOVED_PERMANENTLY, process.env.WEBSITE_URL);
@@ -39,7 +41,7 @@ app.post('/login', async (req, res) => {
         return;
     }
     const code = crypto.randomInt(100000, 999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req?.clientIp || req.ip, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
     util.email('login', data).catch(console.error);
     const metadata = {email: req.body.email};
     const next_token = await util.token.issueCodeToken(ctx, code, metadata);
@@ -77,7 +79,7 @@ app.post('/register', async (req, res) => {
         return;
     }
     const code = crypto.randomInt(1000000, 9999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req?.clientIp || req.ip, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
     util.email('register', data).catch(console.error);
     const User = ctx.database.model('User', schema.user);
     if (await User.findOne({email: req.body.email}).exec()) {
@@ -114,35 +116,32 @@ app.post('/register/verify', async (req, res) => {
 });
 
 app.get('/profile', async (req, res) => {
-    const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
-    if (!token_data) {
+    if (!req.authenticated) {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
-    res.send({profile: token_data.user});
+    res.send({profile: req.authenticated.user});
 });
 
 app.put('/profile', async (req, res) => {
-    const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
-    if (!token_data) {
+    if (!req.authenticated) {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
     const User = ctx.database.model('User', schema.user);
-    const user = await User.findOne({_id: token_data.sub}).exec();
+    const user = await User.findOne({_id: req.authenticated.sub}).exec();
     if (!user) {
         res.sendStatus(http_status.NOT_FOUND);
         return;
     }
-    user.nickname = req?.body?.nickname || token_data.user.nickname;
+    user.nickname = req?.body?.nickname || req.authenticated.user.nickname;
     const metadata = await user.save();
     const token = await util.token.issueAuthToken(ctx, metadata);
     res.send({token});
 });
 
 app.put('/profile/email', async (req, res) => {
-    const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
-    if (!token_data) {
+    if (!req.authenticated) {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
@@ -151,21 +150,20 @@ app.put('/profile/email', async (req, res) => {
         return;
     }
     const code = crypto.randomInt(10000000, 99999999);
-    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: req?.clientIp || req.ip, code};
+    const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
     util.email('update_email', data).catch(console.error);
     const User = ctx.database.model('User', schema.user);
     if (await User.findOne({email: req.body.email}).exec()) {
         res.sendStatus(http_status.CONFLICT);
         return;
     }
-    const metadata = {_id: token_data.sub, email: req.body.email};
+    const metadata = {_id: req.authenticated.sub, email: req.body.email};
     const update_email_token = await util.token.issueCodeToken(ctx, code, metadata);
     res.send({update_email_token});
 });
 
 app.post('/profile/email/verify', async (req, res) => {
-    const token_data = util.token.validateAuthToken(ctx, req.header('Authorization'));
-    if (!token_data) {
+    if (!req.authenticated) {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
@@ -174,7 +172,7 @@ app.post('/profile/email/verify', async (req, res) => {
         return;
     }
     const update_email_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
-    if (!update_email_token_data || update_email_token_data.sub !== token_data.sub) {
+    if (!update_email_token_data || update_email_token_data.sub !== req.authenticated.sub) {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
