@@ -43,7 +43,7 @@ app.post('/login', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', schema.user);
-    if (!(await User.findOne({email: req.body.email}).exec())) {
+    if (!(await User.findOne({email: req.body.email}))) {
         res.sendStatus(http_status.NOT_FOUND);
         return;
     }
@@ -89,7 +89,7 @@ app.post('/register', async (req, res) => {
     const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
     util.email('register', data).catch(console.error);
     const User = ctx.database.model('User', schema.user);
-    if (await User.findOne({email: req.body.email}).exec()) {
+    if (await User.findOne({email: req.body.email})) {
         res.sendStatus(http_status.CONFLICT);
         return;
     }
@@ -113,7 +113,7 @@ app.post('/register/verify', async (req, res) => {
         return;
     }
     const User = ctx.database.model('User', schema.user);
-    if (await User.findOne({email: register_token_data.sub}).exec()) {
+    if (await User.findOne({email: register_token_data.sub})) {
         res.sendStatus(http_status.CONFLICT);
         return;
     }
@@ -148,7 +148,7 @@ app.put('/profile/email', middleware.access(null), async (req, res) => {
     const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
     util.email('update_email', data).catch(console.error);
     const User = ctx.database.model('User', schema.user);
-    if (await User.findOne({email: req.body.email}).exec()) {
+    if (await User.findOne({email: req.body.email})) {
         res.sendStatus(http_status.CONFLICT);
         return;
     }
