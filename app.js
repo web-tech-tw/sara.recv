@@ -33,6 +33,10 @@ app.get('/', (req, res) => {
     res.redirect(http_status.MOVED_PERMANENTLY, process.env.WEBSITE_URL);
 });
 
+app.get('/ip', (req, res) => {
+    res.send({ip_address: util.ip_address(req)});
+});
+
 app.post('/login', async (req, res) => {
     if (!(req?.body?.email && email_validator.validate(req.body.email))) {
         res.sendStatus(http_status.BAD_REQUEST);
