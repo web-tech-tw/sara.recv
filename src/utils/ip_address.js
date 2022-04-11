@@ -1,1 +1,1 @@
-module.exports = (req) => req?.clientIp || req.ip
+module.exports = (req) => req?.clientIp || req.ip;

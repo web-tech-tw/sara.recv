@@ -59,4 +59,4 @@ module.exports = {
     validateAuthToken,
     validateCodeToken,
     isGone,
-}
+};

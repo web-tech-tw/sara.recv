@@ -18,6 +18,7 @@ const
     util = {
         email: require('./src/utils/mail'),
         token: require('./src/utils/token'),
+        access: require('./src/utils/access'),
         ip_address: require('./src/utils/ip_address')
     },
     schema = {
@@ -115,19 +116,11 @@ app.post('/register/verify', async (req, res) => {
     res.send({token});
 });
 
-app.get('/profile', async (req, res) => {
-    if (!req.authenticated) {
-        res.sendStatus(http_status.UNAUTHORIZED);
-        return;
-    }
+app.get('/profile', util.access, async (req, res) => {
     res.send({profile: req.authenticated.user});
 });
 
-app.put('/profile', async (req, res) => {
-    if (!req.authenticated) {
-        res.sendStatus(http_status.UNAUTHORIZED);
-        return;
-    }
+app.put('/profile', util.access, async (req, res) => {
     const User = ctx.database.model('User', schema.user);
     const user = await User.findOne({_id: req.authenticated.sub}).exec();
     if (!user) {
@@ -140,11 +133,7 @@ app.put('/profile', async (req, res) => {
     res.send({token});
 });
 
-app.put('/profile/email', async (req, res) => {
-    if (!req.authenticated) {
-        res.sendStatus(http_status.UNAUTHORIZED);
-        return;
-    }
+app.put('/profile/email', util.access, async (req, res) => {
     if (!(req?.body?.email && email_validator.validate(req.body.email))) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
@@ -162,11 +151,7 @@ app.put('/profile/email', async (req, res) => {
     res.send({update_email_token});
 });
 
-app.post('/profile/email/verify', async (req, res) => {
-    if (!req.authenticated) {
-        res.sendStatus(http_status.UNAUTHORIZED);
-        return;
-    }
+app.post('/profile/email/verify', util.access, async (req, res) => {
     if (!(req?.body?.code && req?.body?.update_email_token && req.body.code.length === 8)) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;

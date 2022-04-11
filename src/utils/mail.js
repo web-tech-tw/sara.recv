@@ -21,4 +21,4 @@ module.exports = function (template, data) {
         text: text(data),
         html: html(data),
     });
-}
+};
