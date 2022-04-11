@@ -18,11 +18,13 @@ const
     util = {
         email: require('./src/utils/mail'),
         token: require('./src/utils/token'),
-        access: require('./src/utils/access'),
         ip_address: require('./src/utils/ip_address')
     },
     schema = {
         user: require("./src/schemas/user")
+    },
+    middleware = {
+        access: require('./src/utils/access'),
     };
 
 const app = require('./src/init/express')(ctx);
@@ -116,11 +118,11 @@ app.post('/register/verify', async (req, res) => {
     res.send({token});
 });
 
-app.get('/profile', util.access(null), async (req, res) => {
+app.get('/profile', middleware.access(null), async (req, res) => {
     res.send({profile: req.authenticated.user});
 });
 
-app.put('/profile', util.access(null), async (req, res) => {
+app.put('/profile', middleware.access(null), async (req, res) => {
     const User = ctx.database.model('User', schema.user);
     const user = await User.findOne({_id: req.authenticated.sub}).exec();
     if (!user) {
@@ -133,7 +135,7 @@ app.put('/profile', util.access(null), async (req, res) => {
     res.send({token});
 });
 
-app.put('/profile/email', util.access(null), async (req, res) => {
+app.put('/profile/email', middleware.access(null), async (req, res) => {
     if (!(req?.body?.email && email_validator.validate(req.body.email))) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
@@ -151,7 +153,7 @@ app.put('/profile/email', util.access(null), async (req, res) => {
     res.send({update_email_token});
 });
 
-app.post('/profile/email/verify', util.access(null), async (req, res) => {
+app.post('/profile/email/verify', middleware.access(null), async (req, res) => {
     if (!(req?.body?.code && req?.body?.update_email_token && req.body.code.length === 8)) {
         res.sendStatus(http_status.BAD_REQUEST);
         return;
