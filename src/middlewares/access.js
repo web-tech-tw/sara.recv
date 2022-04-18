@@ -1,13 +1,7 @@
 const http_status = require('http-status-codes');
-const ip_address = require('../utils/ip_address');
 
 module.exports = (role) => (req, res, next) => {
-    const system_secret = req.header('System-Secret');
-    if (
-        system_secret && role === 'admin' &&
-        ip_address(req) === process.env.SYSTEM_ADMIN_IP_ADDRESS &&
-        system_secret === process.env.SYSTEM_ADMIN_SECRET
-    ) {
+    if (req.auth_method === 'SYS' && req.authenticated && role === 'admin') {
         next();
         return;
     }
