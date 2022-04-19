@@ -1,4 +1,4 @@
-const {validateAuthToken} = require('../utils/token');
+const {issueAuthToken, validateAuthToken} = require('../utils/token');
 const ip_address = require("../utils/ip_address");
 
 module.exports = (ctx) => function (req, res, next) {
@@ -16,6 +16,8 @@ module.exports = (ctx) => function (req, res, next) {
     switch (params[0]) {
         case "SARA": {
             req.authenticated = validateAuthToken(ctx, params[1]);
+            const token = issueAuthToken(ctx, req.authenticated.user);
+            res.header("Sara-Issue", token);
             break;
         }
         case "SYS": {

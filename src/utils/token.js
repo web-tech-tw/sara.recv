@@ -15,12 +15,12 @@ const general_issue_options = () => ({
     mutatePayload: false,
 });
 
-async function issueAuthToken(ctx, user) {
+function issueAuthToken(ctx, user) {
     const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
     return jwt.sign(payload, ctx.jwt_secret, general_issue_options(), null);
 }
 
-async function issueCodeToken(ctx, code, user) {
+function issueCodeToken(ctx, code, user) {
     const next_token_secret = `${ctx.jwt_secret}_${code}`;
     const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
     return jwt.sign(payload, next_token_secret, general_issue_options(), null);

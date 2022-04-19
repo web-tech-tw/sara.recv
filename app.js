@@ -51,7 +51,7 @@ app.post('/login', async (req, res) => {
     const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
     util.email('login', data).catch(console.error);
     const metadata = {email: req.body.email};
-    const next_token = await util.token.issueCodeToken(ctx, code, metadata);
+    const next_token = util.token.issueCodeToken(ctx, code, metadata);
     res.send({next_token});
 });
 
@@ -76,7 +76,7 @@ app.post('/login/verify', async (req, res) => {
         return;
     }
     const metadata = user.toObject();
-    const token = await util.token.issueAuthToken(ctx, metadata);
+    const token = util.token.issueAuthToken(ctx, metadata);
     res.header("Sara-Issue", token).sendStatus(http_status.NO_CONTENT);
 });
 
@@ -93,8 +93,8 @@ app.post('/register', async (req, res) => {
         res.sendStatus(http_status.CONFLICT);
         return;
     }
-    const metadata = {nickname: req.body.nickname, email: req.body.email};
-    const register_token = await util.token.issueCodeToken(ctx, code, metadata);
+    const metadata = {nickname: req.body.nickname, email: req.body.email, created_at: ctx.now(), updated_at: ctx.now()};
+    const register_token = util.token.issueCodeToken(ctx, code, metadata);
     res.send({register_token});
 });
 
@@ -118,7 +118,7 @@ app.post('/register/verify', async (req, res) => {
         return;
     }
     const metadata = await (new User(register_token_data.user)).save();
-    const token = await util.token.issueAuthToken(ctx, metadata);
+    const token = util.token.issueAuthToken(ctx, metadata);
     res.header("Sara-Issue", token).sendStatus(http_status.NO_CONTENT);
 });
 
@@ -134,8 +134,9 @@ app.put('/profile', middleware.access(null), async (req, res) => {
         return;
     }
     user.nickname = req?.body?.nickname || req.authenticated.user.nickname;
+    user.updated_at = ctx.now();
     const metadata = await user.save();
-    const token = await util.token.issueAuthToken(ctx, metadata);
+    const token = util.token.issueAuthToken(ctx, metadata);
     res.header("Sara-Issue", token).sendStatus(http_status.NO_CONTENT);
 });
 
@@ -153,7 +154,7 @@ app.put('/profile/email', middleware.access(null), async (req, res) => {
         return;
     }
     const metadata = {_id: req.authenticated.sub, email: req.body.email};
-    const update_email_token = await util.token.issueCodeToken(ctx, code, metadata);
+    const update_email_token = util.token.issueCodeToken(ctx, code, metadata);
     res.send({update_email_token});
 });
 
@@ -179,7 +180,7 @@ app.post('/profile/email/verify', middleware.access(null), async (req, res) => {
     }
     user.email = update_email_token_data.user.email;
     const metadata = await user.save();
-    const token = await util.token.issueAuthToken(ctx, metadata);
+    const token = util.token.issueAuthToken(ctx, metadata);
     res.header("Sara-Issue", token).sendStatus(http_status.NO_CONTENT);
 });
 
