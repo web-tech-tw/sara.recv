@@ -46,10 +46,11 @@ function validateCodeToken(ctx, code, token) {
 }
 
 function isGone(ctx, token_data) {
-    if (ctx.cache.has(token_data.jti)) {
+    const key_name = `Token:${token_data.jti}`;
+    if (ctx.cache.has(key_name)) {
         return true;
     }
-    ctx.cache.set(token_data.jti, token_data.iat, token_data.exp - ctx.now());
+    ctx.cache.set(key_name, token_data.iat, token_data.exp - ctx.now());
     return false;
 }
 
