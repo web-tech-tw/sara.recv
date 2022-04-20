@@ -155,6 +155,7 @@ app.put('/profile/email', middleware.access(null), async (req, res) => {
     }
     const metadata = {_id: req.authenticated.sub, email: req.body.email};
     const update_email_token = util.token.issueCodeToken(ctx, code, metadata);
+    ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     res.send({update_email_token});
 });
 

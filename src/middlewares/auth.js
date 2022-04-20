@@ -7,7 +7,7 @@ module.exports = (ctx) => {
         const User = ctx.database.model('User', user_schema);
         const user = await User.findById(user_id).exec();
         if (!user) return null;
-        ctx.cache.set(`TokenU:${user_id}`, user.updated_at);
+        ctx.cache.set(`TokenU:${user_id}`, user.updated_at, 3600);
         return user;
     };
     const methods = {
