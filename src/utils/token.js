@@ -7,7 +7,7 @@ const constant = require('../init/const');
 
 const general_issue_options = () => ({
     algorithm: "HS256",
-    expiresIn: "7d",
+    expiresIn: "1d",
     notBefore: "500ms",
     audience: process.env.WEBSITE_URL,
     issuer: constant.APP_NAME,

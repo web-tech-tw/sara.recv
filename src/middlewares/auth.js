@@ -13,17 +13,20 @@ module.exports = (ctx) => function (req, res, next) {
         return;
     }
     req.auth_method = params[0];
-    switch (params[0]) {
+    req.auth_secret = params[1];
+    switch (req.auth_method) {
         case "SARA": {
-            req.authenticated = validateAuthToken(ctx, params[1]);
-            const token = issueAuthToken(ctx, req.authenticated.user);
-            res.header("Sara-Issue", token);
+            req.authenticated = validateAuthToken(ctx, req.auth_secret);
+            if (req.authenticated?.user) {
+                const token = issueAuthToken(ctx, req.authenticated.user);
+                res.header("Sara-Issue", token);
+            }
             break;
         }
         case "SYS": {
             req.authenticated =
                 ip_address(req) === process.env.SYSTEM_ADMIN_IP_ADDRESS &&
-                params[1] === process.env.SYSTEM_ADMIN_SECRET;
+                req.auth_secret === process.env.SYSTEM_ADMIN_SECRET;
             break;
         }
     }

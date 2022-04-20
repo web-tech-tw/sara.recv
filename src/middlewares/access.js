@@ -5,12 +5,12 @@ module.exports = (role) => (req, res, next) => {
         next();
         return;
     }
-    const user_roles = req?.authenticated?.user?.roles;
-    if (!(user_roles && Array.isArray(user_roles))) {
+    const user = req?.authenticated?.user;
+    if (!(user && Array.isArray(user?.roles))) {
         res.sendStatus(http_status.UNAUTHORIZED);
         return;
     }
-    if (role && !user_roles.includes(role)) {
+    if (role && !user.roles.includes(role)) {
         res.sendStatus(http_status.FORBIDDEN);
         return;
     }
