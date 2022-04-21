@@ -11,18 +11,18 @@ module.exports = (ctx) => {
         return user;
     };
     const methods = {
-        "SARA": (req, res) => {
+        "SARA": async (req, res) => {
             req.authenticated = validateAuthToken(ctx, req.auth_secret);
             if (req.authenticated?.user) {
                 const last_updated = ctx.cache.get(`TokenU:${req.authenticated.sub}`);
                 if (last_updated !== req.authenticated.user.updated_at) {
-                    req.authenticated.user = get_user(req.authenticated.sub);
+                    req.authenticated.user = await get_user(req.authenticated.sub);
                 }
                 const token = issueAuthToken(ctx, req.authenticated.user);
                 res.header("Sara-Issue", token);
             }
         },
-        "SYS": (req, _) => {
+        "SYS": async (req, _) => {
             req.authenticated =
                 ip_address(req) === process.env.SYSTEM_ADMIN_IP_ADDRESS &&
                 req.auth_secret === process.env.SYSTEM_ADMIN_SECRET;
@@ -42,7 +42,10 @@ module.exports = (ctx) => {
         req.auth_method = params[0];
         req.auth_secret = params[1];
         if (req.auth_method in methods) {
-            methods[req.auth_method](req, res);
+            methods[req.auth_method](req, res)
+                .then(next())
+                .catch((error) => console.error(error));
+            return;
         }
         next();
     }
