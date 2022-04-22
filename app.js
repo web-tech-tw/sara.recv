@@ -136,8 +136,8 @@ app.put('/profile', middleware.access(null), async (req, res) => {
     user.nickname = req?.body?.nickname || req.authenticated.user.nickname;
     user.updated_at = ctx.now();
     const metadata = await user.save();
-    const token = util.token.issueAuthToken(ctx, metadata);
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
+    const token = util.token.issueAuthToken(ctx, metadata);
     res.header("Sara-Issue", token).sendStatus(http_status.CREATED);
 });
 
@@ -156,7 +156,6 @@ app.put('/profile/email', middleware.access(null), async (req, res) => {
     }
     const metadata = {_id: req.authenticated.sub, email: req.body.email};
     const update_email_token = util.token.issueCodeToken(ctx, code, metadata);
-    ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     res.send({update_email_token});
 });
 
@@ -182,6 +181,7 @@ app.post('/profile/email/verify', middleware.access(null), async (req, res) => {
     }
     user.email = update_email_token_data.user.email;
     const metadata = await user.save();
+    ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     const token = util.token.issueAuthToken(ctx, metadata);
     res.header("Sara-Issue", token).sendStatus(http_status.CREATED);
 });
@@ -227,6 +227,7 @@ app.post('/user/role', middleware.access('admin'), async (req, res) => {
         user.roles.push(req.body.role);
     }
     await user.save();
+    ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     res.sendStatus(http_status.CREATED);
 });
 
@@ -256,6 +257,7 @@ app.delete('/user/role', middleware.access('admin'), async (req, res) => {
         return;
     }
     await user.save();
+    ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     res.sendStatus(http_status.OK);
 });
 
