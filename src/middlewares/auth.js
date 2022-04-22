@@ -13,11 +13,13 @@ module.exports = (ctx) => {
     const methods = {
         "SARA": async (req, res) => {
             req.authenticated = validateAuthToken(ctx, req.auth_secret);
-            if (req.authenticated?.user) {
+            if (req.authenticated?.sub) {
                 const last_updated = ctx.cache.get(`TokenU:${req.authenticated.sub}`);
                 if (last_updated !== req.authenticated.user.updated_at) {
                     req.authenticated.user = await get_user(req.authenticated.sub);
                 }
+            }
+            if (req.authenticated?.user) {
                 const token = issueAuthToken(ctx, req.authenticated.user);
                 res.header("Sara-Issue", token);
             }
