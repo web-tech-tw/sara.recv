@@ -180,6 +180,7 @@ app.post('/profile/email/verify', middleware.access(null), async (req, res) => {
         return;
     }
     user.email = update_email_token_data.user.email;
+    user.updated_at = ctx.now();
     const metadata = await user.save();
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     const token = util.token.issueAuthToken(ctx, metadata);
@@ -226,6 +227,7 @@ app.post('/user/role', middleware.access('admin'), async (req, res) => {
     } else {
         user.roles.push(req.body.role);
     }
+    user.updated_at = ctx.now();
     await user.save();
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     res.sendStatus(http_status.CREATED);
@@ -256,6 +258,7 @@ app.delete('/user/role', middleware.access('admin'), async (req, res) => {
         res.sendStatus(http_status.GONE);
         return;
     }
+    user.updated_at = ctx.now();
     await user.save();
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     res.sendStatus(http_status.OK);
