@@ -45,7 +45,6 @@ module.exports = (ctx) => {
         req.auth_secret = params[1];
         if (req.auth_method in methods) {
             await methods[req.auth_method](req, res);
-            return;
         }
         next();
     }
