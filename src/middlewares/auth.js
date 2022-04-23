@@ -30,7 +30,7 @@ module.exports = (ctx) => {
                 req.auth_secret === process.env.SYSTEM_ADMIN_SECRET;
         }
     };
-    return async (req, res, next) => {
+    return (req, res, next) => {
         const auth_code = req.header('Authorization');
         if (!auth_code) {
             next();
@@ -44,7 +44,10 @@ module.exports = (ctx) => {
         req.auth_method = params[0];
         req.auth_secret = params[1];
         if (req.auth_method in methods) {
-            await methods[req.auth_method](req, res);
+            methods[req.auth_method](req, res)
+                .then(() => next())
+                .catch((error) => console.error(error));
+            return;
         }
         next();
     }
