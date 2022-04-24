@@ -261,7 +261,7 @@ app.delete('/user/role', middleware.access('admin'), async (req, res) => {
     user.updated_at = ctx.now();
     await user.save();
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
-    res.sendStatus(http_status.OK);
+    res.sendStatus(http_status.NO_CONTENT);
 });
 
 app.listen(process.env.HTTP_PORT, process.env.HTTP_HOSTNAME, () => {
