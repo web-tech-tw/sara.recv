@@ -4,8 +4,8 @@ require('dotenv').config();
 
 const
     crypto = require('crypto'),
-    http_status = require('http-status-codes'),
-    email_validator = require('email-validator');
+    email_validator = require('email-validator'),
+    { StatusCodes } = require('http-status-codes');
 
 const
     constant = require('./src/init/const'),
@@ -30,7 +30,7 @@ const
 const app = require('./src/init/express')(ctx);
 
 app.get('/', (req, res) => {
-    res.redirect(http_status.MOVED_PERMANENTLY, process.env.WEBSITE_URL);
+    res.redirect(StatusCodes.MOVED_PERMANENTLY, process.env.WEBSITE_URL);
 });
 
 app.get('/ip', (req, res) => {
@@ -39,12 +39,12 @@ app.get('/ip', (req, res) => {
 
 app.post('/login', async (req, res) => {
     if (!(req?.body?.email && email_validator.validate(req.body.email))) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const User = ctx.database.model('User', schema.user);
     if (!(await User.findOne({email: req.body.email}))) {
-        res.sendStatus(http_status.NOT_FOUND);
+        res.sendStatus(StatusCodes.NOT_FOUND);
         return;
     }
     const code = crypto.randomInt(100000, 999999);
@@ -57,32 +57,32 @@ app.post('/login', async (req, res) => {
 
 app.post('/login/verify', async (req, res) => {
     if (!(req?.body?.code && req?.body?.next_token && req.body.code.length === 6)) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const next_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.next_token);
     if (!next_token_data) {
-        res.sendStatus(http_status.UNAUTHORIZED);
+        res.sendStatus(StatusCodes.UNAUTHORIZED);
         return;
     }
     if (util.token.isGone(ctx, next_token_data)) {
-        res.sendStatus(http_status.GONE);
+        res.sendStatus(StatusCodes.GONE);
         return;
     }
     const User = ctx.database.model('User', schema.user);
     const user = await User.findOne({email: next_token_data.sub}).exec();
     if (!user) {
-        res.sendStatus(http_status.NOT_FOUND);
+        res.sendStatus(StatusCodes.NOT_FOUND);
         return;
     }
     const metadata = user.toObject();
     const token = util.token.issueAuthToken(ctx, metadata);
-    res.header("Sara-Issue", token).sendStatus(http_status.CREATED);
+    res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
 });
 
 app.post('/register', async (req, res) => {
     if (!(req?.body?.nickname && req?.body?.email && email_validator.validate(req.body.email))) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const code = crypto.randomInt(1000000, 9999999);
@@ -90,7 +90,7 @@ app.post('/register', async (req, res) => {
     util.email('register', data).catch(console.error);
     const User = ctx.database.model('User', schema.user);
     if (await User.findOne({email: req.body.email})) {
-        res.sendStatus(http_status.CONFLICT);
+        res.sendStatus(StatusCodes.CONFLICT);
         return;
     }
     const metadata = {nickname: req.body.nickname, email: req.body.email, created_at: ctx.now(), updated_at: ctx.now()};
@@ -100,26 +100,26 @@ app.post('/register', async (req, res) => {
 
 app.post('/register/verify', async (req, res) => {
     if (!(req?.body?.code && req?.body?.register_token && req.body.code.length === 7)) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const register_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.register_token);
     if (!register_token_data) {
-        res.sendStatus(http_status.UNAUTHORIZED);
+        res.sendStatus(StatusCodes.UNAUTHORIZED);
         return;
     }
     if (util.token.isGone(ctx, register_token_data)) {
-        res.sendStatus(http_status.GONE);
+        res.sendStatus(StatusCodes.GONE);
         return;
     }
     const User = ctx.database.model('User', schema.user);
     if (await User.findOne({email: register_token_data.sub})) {
-        res.sendStatus(http_status.CONFLICT);
+        res.sendStatus(StatusCodes.CONFLICT);
         return;
     }
     const metadata = await (new User(register_token_data.user)).save();
     const token = util.token.issueAuthToken(ctx, metadata);
-    res.header("Sara-Issue", token).sendStatus(http_status.CREATED);
+    res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
 });
 
 app.get('/profile', middleware.access(null), async (req, res) => {
@@ -130,7 +130,7 @@ app.put('/profile', middleware.access(null), async (req, res) => {
     const User = ctx.database.model('User', schema.user);
     const user = await User.findById(req.authenticated.sub).exec();
     if (!user) {
-        res.sendStatus(http_status.NOT_FOUND);
+        res.sendStatus(StatusCodes.NOT_FOUND);
         return;
     }
     user.nickname = req?.body?.nickname || req.authenticated.user.nickname;
@@ -138,12 +138,12 @@ app.put('/profile', middleware.access(null), async (req, res) => {
     const metadata = await user.save();
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     const token = util.token.issueAuthToken(ctx, metadata);
-    res.header("Sara-Issue", token).sendStatus(http_status.CREATED);
+    res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
 });
 
 app.put('/profile/email', middleware.access(null), async (req, res) => {
     if (!(req?.body?.email && email_validator.validate(req.body.email))) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const code = crypto.randomInt(10000000, 99999999);
@@ -151,7 +151,7 @@ app.put('/profile/email', middleware.access(null), async (req, res) => {
     util.email('update_email', data).catch(console.error);
     const User = ctx.database.model('User', schema.user);
     if (await User.findOne({email: req.body.email})) {
-        res.sendStatus(http_status.CONFLICT);
+        res.sendStatus(StatusCodes.CONFLICT);
         return;
     }
     const metadata = {_id: req.authenticated.sub, email: req.body.email};
@@ -161,22 +161,22 @@ app.put('/profile/email', middleware.access(null), async (req, res) => {
 
 app.post('/profile/email/verify', middleware.access(null), async (req, res) => {
     if (!(req?.body?.code && req?.body?.update_email_token && req.body.code.length === 8)) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const update_email_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
     if (!update_email_token_data || update_email_token_data.sub !== req.authenticated.sub) {
-        res.sendStatus(http_status.UNAUTHORIZED);
+        res.sendStatus(StatusCodes.UNAUTHORIZED);
         return;
     }
     if (util.token.isGone(ctx, update_email_token_data)) {
-        res.sendStatus(http_status.GONE);
+        res.sendStatus(StatusCodes.GONE);
         return;
     }
     const User = ctx.database.model('User', schema.user);
     const user = await User.findById(update_email_token_data.sub).exec();
     if (!user) {
-        res.sendStatus(http_status.NOT_FOUND);
+        res.sendStatus(StatusCodes.NOT_FOUND);
         return;
     }
     user.email = update_email_token_data.user.email;
@@ -184,12 +184,12 @@ app.post('/profile/email/verify', middleware.access(null), async (req, res) => {
     const metadata = await user.save();
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
     const token = util.token.issueAuthToken(ctx, metadata);
-    res.header("Sara-Issue", token).sendStatus(http_status.CREATED);
+    res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
 });
 
 app.get('/user', middleware.access('admin'), async (req, res) => {
     if (!(req?.query?.user_id)) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const User = ctx.database.model('User', schema.user);
@@ -197,13 +197,13 @@ app.get('/user', middleware.access('admin'), async (req, res) => {
         res.send(await User.findById(req.query.user_id).exec());
     } catch (e) {
         if (e.kind !== 'ObjectId') console.error(e);
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
     }
 });
 
 app.post('/user/role', middleware.access('admin'), async (req, res) => {
     if (!(req?.body?.user_id && req?.body?.role)) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const User = ctx.database.model('User', schema.user);
@@ -212,17 +212,17 @@ app.post('/user/role', middleware.access('admin'), async (req, res) => {
         user = await User.findById(req.body.user_id).exec();
     } catch (e) {
         if (e.kind !== 'ObjectId') console.error(e);
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     if (!user) {
-        res.sendStatus(http_status.NOT_FOUND);
+        res.sendStatus(StatusCodes.NOT_FOUND);
         return;
     }
     if (!Array.isArray(user?.roles)) {
         user.roles = [req.body.role];
     } else if (user.roles.includes(req.body.role)) {
-        res.sendStatus(http_status.CONFLICT);
+        res.sendStatus(StatusCodes.CONFLICT);
         return;
     } else {
         user.roles.push(req.body.role);
@@ -230,12 +230,12 @@ app.post('/user/role', middleware.access('admin'), async (req, res) => {
     user.updated_at = ctx.now();
     await user.save();
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
-    res.sendStatus(http_status.CREATED);
+    res.sendStatus(StatusCodes.CREATED);
 });
 
 app.delete('/user/role', middleware.access('admin'), async (req, res) => {
     if (!(req?.body?.user_id && req?.body?.role)) {
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     const User = ctx.database.model('User', schema.user);
@@ -244,24 +244,24 @@ app.delete('/user/role', middleware.access('admin'), async (req, res) => {
         user = await User.findById(req.body.user_id).exec();
     } catch (e) {
         if (e.kind !== 'ObjectId') console.error(e);
-        res.sendStatus(http_status.BAD_REQUEST);
+        res.sendStatus(StatusCodes.BAD_REQUEST);
         return;
     }
     if (!user) {
-        res.sendStatus(http_status.NOT_FOUND);
+        res.sendStatus(StatusCodes.NOT_FOUND);
         return;
     }
     if (Array.isArray(user?.roles) && user.roles.includes(req.body.role)) {
         const index = user.roles.indexOf(req.body.role);
         user.roles.splice(index, 1);
     } else {
-        res.sendStatus(http_status.GONE);
+        res.sendStatus(StatusCodes.GONE);
         return;
     }
     user.updated_at = ctx.now();
     await user.save();
     ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
-    res.sendStatus(http_status.NO_CONTENT);
+    res.sendStatus(StatusCodes.NO_CONTENT);
 });
 
 app.listen(process.env.HTTP_PORT, process.env.HTTP_HOSTNAME, () => {
