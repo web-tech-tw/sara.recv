@@ -1,4 +1,4 @@
-const { StatusCodes } = require('http-status-codes');
+const {StatusCodes} = require('http-status-codes');
 
 module.exports = (role) => (req, res, next) => {
     if (req.auth_method === 'SYS' && req.authenticated && role === 'admin') {

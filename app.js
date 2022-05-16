@@ -23,8 +23,9 @@ const
         user: require("./src/schemas/user")
     },
     middleware = {
-        validator: require('express-validator'),
         access: require('./src/middlewares/access'),
+        inspector: require('./src/middlewares/inspector'),
+        validator: require('express-validator')
     };
 
 const app = require('./src/init/express')(ctx);
@@ -39,12 +40,8 @@ app.get('/ip', (req, res) => {
 
 app.post('/login',
     middleware.validator.body('email').isEmail(),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const User = ctx.database.model('User', schema.user);
         if (!(await User.findOne({email: req.body.email}))) {
             res.sendStatus(StatusCodes.NOT_FOUND);
@@ -63,12 +60,8 @@ app.post('/login/verify',
     middleware.validator.body('code').isNumeric(),
     middleware.validator.body('code').isLength({min: 6, max: 6}),
     middleware.validator.body('next_token').isString(),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const next_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.next_token);
         if (!next_token_data) {
             res.sendStatus(StatusCodes.UNAUTHORIZED);
@@ -93,12 +86,8 @@ app.post('/login/verify',
 app.post('/register',
     middleware.validator.body('nickname').isString(),
     middleware.validator.body('email').isEmail(),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const code = crypto.randomInt(1000000, 9999999);
         const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
         util.email('register', data).catch(console.error);
@@ -122,12 +111,8 @@ app.post('/register/verify',
     middleware.validator.body('code').isNumeric(),
     middleware.validator.body('code').isLength({min: 7, max: 7}),
     middleware.validator.body('register_token').isString(),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const register_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.register_token);
         if (!register_token_data) {
             res.sendStatus(StatusCodes.UNAUTHORIZED);
@@ -176,12 +161,8 @@ app.put('/profile',
 app.put('/profile/email',
     middleware.access(null),
     middleware.validator.body('email').isEmail(),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const code = crypto.randomInt(10000000, 99999999);
         const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
         util.email('update_email', data).catch(console.error);
@@ -201,12 +182,8 @@ app.post('/profile/email/verify',
     middleware.validator.body('code').isNumeric(),
     middleware.validator.body('code').isLength({min: 8, max: 8}),
     middleware.validator.body('update_email_token').isString(),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const update_email_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
         if (!update_email_token_data || update_email_token_data.sub !== req.authenticated.sub) {
             res.sendStatus(StatusCodes.UNAUTHORIZED);
@@ -234,12 +211,8 @@ app.post('/profile/email/verify',
 app.get('/user',
     middleware.access('admin'),
     middleware.validator.query('user_id'),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const User = ctx.database.model('User', schema.user);
         try {
             res.send(await User.findById(req.query.user_id).exec());
@@ -254,12 +227,8 @@ app.post('/user/role',
     middleware.access('admin'),
     middleware.validator.body('user_id').isString(),
     middleware.validator.body('role').isString(),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const User = ctx.database.model('User', schema.user);
         let user;
         try {
@@ -292,12 +261,8 @@ app.delete('/user/role',
     middleware.access('admin'),
     middleware.validator.body('user_id').isString(),
     middleware.validator.body('role').isString(),
+    middleware.inspector,
     async (req, res) => {
-        const errors = middleware.validator.validationResult(req);
-        if (!errors.isEmpty()) {
-            res.status(StatusCodes.BAD_REQUEST).json({errors: errors.array()});
-            return;
-        }
         const User = ctx.database.model('User', schema.user);
         let user;
         try {
