@@ -15,7 +15,7 @@ const
         jwt_secret: require('./src/init/jwt_secret')
     },
     util = {
-        email: require('./src/utils/mail'),
+        mail_sender: require('./src/utils/mail_sender'),
         sara_token: require('./src/utils/sara_token'),
         ip_address: require('./src/utils/ip_address')
     },
@@ -49,7 +49,7 @@ app.post('/login',
         }
         const code = crypto.randomInt(100000, 999999);
         const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
-        util.email('login', data).catch(console.error);
+        util.mail_sender('login', data).catch(console.error);
         const metadata = {email: req.body.email};
         const next_token = util.sara_token.issueCodeToken(ctx, code, metadata);
         res.send({next_token});
@@ -90,7 +90,7 @@ app.post('/register',
     async (req, res) => {
         const code = crypto.randomInt(1000000, 9999999);
         const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
-        util.email('register', data).catch(console.error);
+        util.mail_sender('register', data).catch(console.error);
         const User = ctx.database.model('User', schema.user);
         if (await User.findOne({email: req.body.email})) {
             res.sendStatus(StatusCodes.CONFLICT);
@@ -165,7 +165,7 @@ app.put('/profile/email',
     async (req, res) => {
         const code = crypto.randomInt(10000000, 99999999);
         const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
-        util.email('update_email', data).catch(console.error);
+        util.mail_sender('update_email', data).catch(console.error);
         const User = ctx.database.model('User', schema.user);
         if (await User.findOne({email: req.body.email})) {
             res.sendStatus(StatusCodes.CONFLICT);
