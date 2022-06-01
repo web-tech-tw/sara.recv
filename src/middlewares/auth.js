@@ -26,8 +26,8 @@ module.exports = (ctx) => {
         },
         "SYS": async (req, _) => {
             req.authenticated =
-                ip_address(req) === process.env.SYSTEM_ADMIN_IP_ADDRESS &&
-                req.auth_secret === process.env.SYSTEM_ADMIN_SECRET;
+                ip_address(req) === process.env.SARA_SYSTEM_ADMIN_IP_ADDRESS &&
+                req.auth_secret === process.env.SARA_SYSTEM_ADMIN_SECRET;
         }
     };
     return (req, res, next) => {

@@ -290,9 +290,9 @@ app.delete('/user/role',
     }
 );
 
-app.listen(process.env.HTTP_PORT, process.env.HTTP_HOSTNAME, () => {
-    console.log(constant.APP_NAME)
-    console.log('====')
-    console.log('Application is listening at')
-    console.log(`http://localhost:${process.env.HTTP_PORT}`)
+console.log(`${constant.APP_NAME}\n====`);
+require('./src/execute')(app, ({type, hostname, port}) => {
+    const protocol = type === 'general' ? 'http' : 'https';
+    console.log(`Protocol "${protocol}" is listening at`);
+    console.log(`${protocol}://${hostname}:${port}`);
 });
