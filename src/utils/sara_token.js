@@ -1,9 +1,16 @@
 "use strict";
+// Token utils of Sara.
 
+// Import jsonwebtoken
 const jwt = require('jsonwebtoken');
+
+// Import UUID Generator
 const {v4: uuidV4} = require('uuid');
+
+// Import SHA256 Generator
 const {sha256} = require('js-sha256');
 
+// Define general_issue_options Generator
 const general_issue_options = (ctx, metadata) => ({
     algorithm: "HS256",
     expiresIn: "1d",
@@ -30,12 +37,14 @@ const general_issue_options = (ctx, metadata) => ({
     }
 });
 
+// Issue Function (Auth)
 function issueAuthToken(ctx, user) {
     const issue_options = general_issue_options(ctx, {type: "auth"});
     const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
     return jwt.sign(payload, ctx.jwt_secret, issue_options, null);
 }
 
+// Issue Function (Code)
 function issueCodeToken(ctx, code, user) {
     const next_token_secret = `${ctx.jwt_secret}_${code}`;
     const issue_options = general_issue_options(ctx, {type: "code"});
@@ -43,6 +52,7 @@ function issueCodeToken(ctx, code, user) {
     return jwt.sign(payload, next_token_secret, issue_options, null);
 }
 
+// Validate Function (Auth)
 function validateAuthToken(ctx, token) {
     try {
         return jwt.verify(token, ctx.jwt_secret, null, null);
@@ -52,6 +62,7 @@ function validateAuthToken(ctx, token) {
     }
 }
 
+// Validate Function (Code)
 function validateCodeToken(ctx, code, token) {
     try {
         const next_token_secret = `${ctx.jwt_secret}_${code}`;
@@ -62,6 +73,7 @@ function validateCodeToken(ctx, code, token) {
     }
 }
 
+// Replay Attack Protection
 function isGone(ctx, token_data) {
     const key_name = `Token:${token_data.jti}`;
     if (ctx.cache.has(key_name)) return true;
@@ -69,6 +81,7 @@ function isGone(ctx, token_data) {
     return false;
 }
 
+// Export (object)
 module.exports = {
     issueAuthToken,
     issueCodeToken,

@@ -16,7 +16,7 @@ const
     },
     util = {
         email: require('./src/utils/mail'),
-        token: require('./src/utils/token'),
+        sara_token: require('./src/utils/sara_token'),
         ip_address: require('./src/utils/ip_address')
     },
     schema = {
@@ -51,7 +51,7 @@ app.post('/login',
         const data = {website: process.env.WEBSITE_URL, to: req.body.email, ip_address: util.ip_address(req), code};
         util.email('login', data).catch(console.error);
         const metadata = {email: req.body.email};
-        const next_token = util.token.issueCodeToken(ctx, code, metadata);
+        const next_token = util.sara_token.issueCodeToken(ctx, code, metadata);
         res.send({next_token});
     }
 );
@@ -62,12 +62,12 @@ app.post('/login/verify',
     middleware.validator.body('next_token').isString(),
     middleware.inspector,
     async (req, res) => {
-        const next_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.next_token);
+        const next_token_data = util.sara_token.validateCodeToken(ctx, req.body.code, req.body.next_token);
         if (!next_token_data) {
             res.sendStatus(StatusCodes.UNAUTHORIZED);
             return;
         }
-        if (util.token.isGone(ctx, next_token_data)) {
+        if (util.sara_token.isGone(ctx, next_token_data)) {
             res.sendStatus(StatusCodes.GONE);
             return;
         }
@@ -78,7 +78,7 @@ app.post('/login/verify',
             return;
         }
         const metadata = user.toObject();
-        const token = util.token.issueAuthToken(ctx, metadata);
+        const token = util.sara_token.issueAuthToken(ctx, metadata);
         res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
     }
 );
@@ -102,7 +102,7 @@ app.post('/register',
             created_at: ctx.now(),
             updated_at: ctx.now()
         };
-        const register_token = util.token.issueCodeToken(ctx, code, metadata);
+        const register_token = util.sara_token.issueCodeToken(ctx, code, metadata);
         res.send({register_token});
     }
 );
@@ -113,12 +113,12 @@ app.post('/register/verify',
     middleware.validator.body('register_token').isString(),
     middleware.inspector,
     async (req, res) => {
-        const register_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.register_token);
+        const register_token_data = util.sara_token.validateCodeToken(ctx, req.body.code, req.body.register_token);
         if (!register_token_data) {
             res.sendStatus(StatusCodes.UNAUTHORIZED);
             return;
         }
-        if (util.token.isGone(ctx, register_token_data)) {
+        if (util.sara_token.isGone(ctx, register_token_data)) {
             res.sendStatus(StatusCodes.GONE);
             return;
         }
@@ -128,7 +128,7 @@ app.post('/register/verify',
             return;
         }
         const metadata = await (new User(register_token_data.user)).save();
-        const token = util.token.issueAuthToken(ctx, metadata);
+        const token = util.sara_token.issueAuthToken(ctx, metadata);
         res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
     }
 );
@@ -153,7 +153,7 @@ app.put('/profile',
         user.updated_at = ctx.now();
         const metadata = await user.save();
         ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
-        const token = util.token.issueAuthToken(ctx, metadata);
+        const token = util.sara_token.issueAuthToken(ctx, metadata);
         res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
     }
 );
@@ -172,7 +172,7 @@ app.put('/profile/email',
             return;
         }
         const metadata = {_id: req.authenticated.sub, email: req.body.email};
-        const update_email_token = util.token.issueCodeToken(ctx, code, metadata);
+        const update_email_token = util.sara_token.issueCodeToken(ctx, code, metadata);
         res.send({update_email_token});
     }
 );
@@ -184,12 +184,12 @@ app.post('/profile/email/verify',
     middleware.validator.body('update_email_token').isString(),
     middleware.inspector,
     async (req, res) => {
-        const update_email_token_data = util.token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
+        const update_email_token_data = util.sara_token.validateCodeToken(ctx, req.body.code, req.body.update_email_token);
         if (!update_email_token_data || update_email_token_data.sub !== req.authenticated.sub) {
             res.sendStatus(StatusCodes.UNAUTHORIZED);
             return;
         }
-        if (util.token.isGone(ctx, update_email_token_data)) {
+        if (util.sara_token.isGone(ctx, update_email_token_data)) {
             res.sendStatus(StatusCodes.GONE);
             return;
         }
@@ -203,7 +203,7 @@ app.post('/profile/email/verify',
         user.updated_at = ctx.now();
         const metadata = await user.save();
         ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
-        const token = util.token.issueAuthToken(ctx, metadata);
+        const token = util.sara_token.issueAuthToken(ctx, metadata);
         res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
     }
 );

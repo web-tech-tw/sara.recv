@@ -1,8 +1,10 @@
 "use strict";
+// express.js is a web framework.
 
 // Import express.js
 const express = require('express');
 
+// Export (function)
 module.exports = (ctx) => {
     // Initialize App Engine
     const app = express();
@@ -14,17 +16,13 @@ module.exports = (ctx) => {
     // Request Body Parser
     app.use(express.urlencoded({extended: true}));
 
-    // Option Middlewares
+    // Optional Middlewares
     if (process.env.HTTPS_REDIRECT === 'yes') {
         app.use(require('../middlewares/https_redirect'));
     }
     if (process.env.HTTP_CORS === 'yes') {
         const cors = require('cors');
-        const cors_handler = cors({
-            origin: process.env.WEBSITE_URL,
-            exposedHeaders: ['Sara-Issue']
-        });
-        app.use(cors_handler);
+        app.use(cors({origin: process.env.WEBSITE_URL}));
     }
 
     // Return App Engine
