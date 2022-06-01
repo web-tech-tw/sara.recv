@@ -290,6 +290,24 @@ app.delete('/user/role',
     }
 );
 
+app.post('/token/verify',
+    middleware.validator.body('token'),
+    middleware.inspector,
+    (req, res) => {
+        const data = util.token.validateAuthToken(ctx, req.body.token);
+        res.sendStatus(data ? StatusCodes.OK : StatusCodes.UNAUTHORIZED);
+    }
+);
+
+app.post('/token/decode',
+    middleware.validator.body('token'),
+    middleware.inspector,
+    (req, res) => {
+        const data = util.token.validateAuthToken(ctx, req.body.token);
+        res.status(data ? StatusCodes.OK : StatusCodes.UNAUTHORIZED).send(data);
+    }
+);
+
 console.log(`${constant.APP_NAME} (runtime: ${process.env.RUNTIME_ENV || "native"})\n====`);
 require('./src/execute')(app, ({type, hostname, port}) => {
     const protocol = type === 'general' ? 'http' : 'https';

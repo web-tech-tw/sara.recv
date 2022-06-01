@@ -29,8 +29,10 @@ const general_issue_options = (metadata) => ({
                     register: process.env.SARA_CLIENT_REGISTER_URL,
                 },
                 api: {
-                    sub_verify: process.env.SARA_API_SUB_VERIFY_URL,
-                    role_verify: process.env.SARA_API_ROLE_VERIFY_URL
+                    token: {
+                        verify: process.env.SARA_API_TOKEN_VERIFY_URL,
+                        decode: process.env.SARA_API_TOKEN_DECODE_URL
+                    }
                 }
             }
         }
