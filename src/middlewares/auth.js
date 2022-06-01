@@ -8,7 +8,7 @@ const ip_address = require("../utils/ip_address");
 
 // Import auth_methods
 const auth_methods = {
-    "SARA": async (ctx, req, _) => {
+    "SARA": async (ctx, req, res) => {
         const get_user = async (user_id) => {
             const user_schema = require("../schemas/user");
             const User = ctx.database.model('User', user_schema);
