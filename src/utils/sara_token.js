@@ -11,12 +11,12 @@ const {v4: uuidV4} = require('uuid');
 const {sha256} = require('js-sha256');
 
 // Define general_issue_options Generator
-const general_issue_options = (ctx, metadata) => ({
+const general_issue_options = (metadata) => ({
     algorithm: "HS256",
     expiresIn: "1d",
     notBefore: "500ms",
     audience: process.env.WEBSITE_URL,
-    issuer: sha256(ctx.jwt_secret),
+    issuer: sha256(metadata.ctx.jwt_secret),
     noTimestamp: false,
     mutatePayload: false,
     header: {
@@ -37,9 +37,17 @@ const general_issue_options = (ctx, metadata) => ({
     }
 });
 
+// Define general_validate_options Generator
+const general_validate_options = (metadata) => ({
+    algorithms: ["HS256"],
+    audience: process.env.WEBSITE_URL,
+    complete: true,
+    issuer: sha256(metadata.ctx.jwt_secret)
+});
+
 // Issue Function (Auth)
 function issueAuthToken(ctx, user) {
-    const issue_options = general_issue_options(ctx, {type: "auth"});
+    const issue_options = general_issue_options({ctx, type: "auth"});
     const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
     return jwt.sign(payload, ctx.jwt_secret, issue_options, null);
 }
@@ -47,7 +55,7 @@ function issueAuthToken(ctx, user) {
 // Issue Function (Code)
 function issueCodeToken(ctx, code, user) {
     const next_token_secret = `${ctx.jwt_secret}_${code}`;
-    const issue_options = general_issue_options(ctx, {type: "code"});
+    const issue_options = general_issue_options({ctx, type: "code"});
     const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
     return jwt.sign(payload, next_token_secret, issue_options, null);
 }
@@ -55,7 +63,13 @@ function issueCodeToken(ctx, code, user) {
 // Validate Function (Auth)
 function validateAuthToken(ctx, token) {
     try {
-        return jwt.verify(token, ctx.jwt_secret, null, null);
+        const validate_options = general_validate_options({ctx});
+        const data = jwt.verify(token, ctx.jwt_secret, validate_options, null);
+        if (data?.header?.sara?.version !== 1 || data?.header?.sara?.type !== "auth") {
+            console.error("invalid_sara_code_token");
+            return false;
+        }
+        return data.payload;
     } catch (e) {
         console.error(e);
         return false;
@@ -66,7 +80,13 @@ function validateAuthToken(ctx, token) {
 function validateCodeToken(ctx, code, token) {
     try {
         const next_token_secret = `${ctx.jwt_secret}_${code}`;
-        return jwt.verify(token, next_token_secret, null, null);
+        const validate_options = general_validate_options({ctx});
+        const data = jwt.verify(token, next_token_secret, validate_options, null);
+        if (data?.header?.sara?.version !== 1 || data?.header?.sara?.type !== "code") {
+            console.error("invalid_sara_code_token");
+            return false;
+        }
+        return data.payload;
     } catch (e) {
         console.error(e);
         return false;
