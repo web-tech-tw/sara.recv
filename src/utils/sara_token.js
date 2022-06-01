@@ -41,8 +41,8 @@ const general_issue_options = (metadata) => ({
 const general_validate_options = (metadata) => ({
     algorithms: ["HS256"],
     audience: process.env.WEBSITE_URL,
-    complete: true,
-    issuer: sha256(metadata.ctx.jwt_secret)
+    issuer: sha256(metadata.ctx.jwt_secret),
+    complete: true
 });
 
 // Issue Function (Auth)
