@@ -21,7 +21,7 @@ const auth_methods = {
         if (req.authenticated?.sub) {
             const last_updated = ctx.cache.get(`TokenU:${req.authenticated.sub}`);
             if (last_updated !== req.authenticated.user.updated_at) {
-                    req.authenticated.user = await get_user(req.authenticated.sub);
+                req.authenticated.user = await get_user(req.authenticated.sub);
             }
         }
         if (req.authenticated?.user) {
@@ -55,6 +55,11 @@ module.exports = (ctx) => function (req, res, next) {
         return;
     }
     auth_methods[req.auth_method](ctx, req, res)
-        .then(() => next())
+        .then((result) => {
+            if (!req.authenticated) {
+                req.authenticated = result;
+            }
+            next();
+        })
         .catch((error) => console.error(error));
 };
