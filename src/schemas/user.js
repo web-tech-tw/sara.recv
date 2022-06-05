@@ -6,7 +6,7 @@ const Schema = mongoose.Schema;
 const ObjectId = Schema.ObjectId;
 
 module.exports = new Schema({
-    id: ObjectId,
+    _id: ObjectId,
     email: String,
     nickname: String,
     roles: Array,
