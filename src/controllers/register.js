@@ -1,5 +1,5 @@
-import {StatusCodes} from "http-status-codes";
-import {Router} from "express";
+const {StatusCodes} = require("http-status-codes");
+const {Router} = require("express");
 
 // Import modules
 const
