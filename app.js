@@ -1,13 +1,15 @@
 "use strict";
 
+// Load configs from .env
 require('dotenv').config();
 
-const
-    crypto = require('crypto'),
-    {StatusCodes} = require('http-status-codes');
+// Import StatusCodes
+const {StatusCodes} = require('http-status-codes');
 
+// Import modules
 const
     constant = require('./src/init/const'),
+    crypto = require('crypto'),
     ctx = {
         now: () => Math.floor(new Date().getTime() / 1000),
         cache: require('./src/init/cache'),
@@ -310,7 +312,13 @@ app.post('/token/decode',
     }
 );
 
-console.log(`${constant.APP_NAME} (runtime: ${process.env.RUNTIME_ENV || "native"})\n====`);
+// Show status message
+console.log(
+    constant.APP_NAME,
+    `(runtime: ${process.env.NODE_ENV}, ${process.env.RUNTIME_ENV || "native"})`,
+    '\n===='
+);
+// Mount application and execute it
 require('./src/execute')(app, ({type, hostname, port}) => {
     const protocol = type === 'general' ? 'http' : 'https';
     console.log(`Protocol "${protocol}" is listening at`);

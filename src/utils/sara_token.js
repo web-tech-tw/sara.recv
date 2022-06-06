@@ -4,13 +4,13 @@
 // Import jsonwebtoken
 const jwt = require('jsonwebtoken');
 
-// Import UUID Generator
+// Import UUID generator
 const {v4: uuidV4} = require('uuid');
 
-// Import SHA256 Generator
+// Import SHA256 generator
 const {sha256} = require('js-sha256');
 
-// Define general_issue_options Generator
+// Define general_issue_options generator
 const general_issue_options = (metadata) => ({
     algorithm: "HS256",
     expiresIn: "1d",
@@ -39,7 +39,7 @@ const general_issue_options = (metadata) => ({
     }
 });
 
-// Define general_validate_options Generator
+// Define general_validate_options generator
 const general_validate_options = (metadata) => ({
     algorithms: ["HS256"],
     audience: process.env.WEBSITE_URL,
@@ -47,14 +47,14 @@ const general_validate_options = (metadata) => ({
     complete: true
 });
 
-// Issue Function (Auth)
+// Issue function (Auth)
 function issueAuthToken(ctx, user) {
     const issue_options = general_issue_options({ctx, type: "auth"});
     const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
     return jwt.sign(payload, ctx.jwt_secret, issue_options, null);
 }
 
-// Issue Function (Code)
+// Issue function (Code)
 function issueCodeToken(ctx, code, user) {
     const next_token_secret = `${ctx.jwt_secret}_${code}`;
     const issue_options = general_issue_options({ctx, type: "code"});
@@ -62,7 +62,7 @@ function issueCodeToken(ctx, code, user) {
     return jwt.sign(payload, next_token_secret, issue_options, null);
 }
 
-// Validate Function (Auth)
+// Validate function (Auth)
 function validateAuthToken(ctx, token) {
     try {
         const validate_options = general_validate_options({ctx});
@@ -78,7 +78,7 @@ function validateAuthToken(ctx, token) {
     }
 }
 
-// Validate Function (Code)
+// Validate function (Code)
 function validateCodeToken(ctx, code, token) {
     try {
         const next_token_secret = `${ctx.jwt_secret}_${code}`;
@@ -95,7 +95,7 @@ function validateCodeToken(ctx, code, token) {
     }
 }
 
-// Replay Attack Protection
+// Replay attack protection
 function isGone(ctx, token_data) {
     const key_name = `Token:${token_data.jti}`;
     if (ctx.cache.has(key_name)) return true;
