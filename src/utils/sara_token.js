@@ -2,16 +2,16 @@
 // Token utils of Sara.
 
 // Import jsonwebtoken
-const jwt = require('jsonwebtoken');
+const jwt = require("jsonwebtoken");
 
 // Import UUID generator
-const {v4: uuidV4} = require('uuid');
+const {v4: uuidV4} = require("uuid");
 
 // Import SHA256 generator
-const {sha256} = require('js-sha256');
+const {sha256} = require("js-sha256");
 
-// Define general_issue_options generator
-const general_issue_options = (metadata) => ({
+// Define generalIssueOptions generator
+const generalIssueOptions = (metadata) => ({
     algorithm: "HS256",
     expiresIn: "1d",
     notBefore: "500ms",
@@ -31,43 +31,68 @@ const general_issue_options = (metadata) => ({
                 api: {
                     token: {
                         verify: process.env.SARA_API_TOKEN_VERIFY_URL,
-                        decode: process.env.SARA_API_TOKEN_DECODE_URL
-                    }
-                }
-            }
-        }
-    }
+                        decode: process.env.SARA_API_TOKEN_DECODE_URL,
+                    },
+                },
+            },
+        },
+    },
 });
 
-// Define general_validate_options generator
-const general_validate_options = (metadata) => ({
+// Define generalValidateOptions generator
+const generalValidateOptions = (metadata) => ({
     algorithms: ["HS256"],
     audience: process.env.WEBSITE_URL,
     issuer: sha256(metadata.ctx.jwt_secret),
-    complete: true
+    complete: true,
 });
 
-// Issue function (Auth)
+/**
+ *
+ * @param {object} ctx the context variable from app.js
+ * @param user the user data to issue
+ * @return {string|null}
+ */
 function issueAuthToken(ctx, user) {
-    const issue_options = general_issue_options({ctx, type: "auth"});
-    const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
-    return jwt.sign(payload, ctx.jwt_secret, issue_options, null);
+    const issueOptions = generalIssueOptions({ctx, type: "auth"});
+    const payload = {
+        user, sub: user._id || user.email,
+        jti: uuidV4(null, null, null),
+    };
+    return jwt.sign(payload, ctx.jwt_secret, issueOptions, null);
 }
 
-// Issue function (Code)
+/**
+ * Issue function (Code)
+ * @param {object} ctx the context variable from app.js
+ * @param code the code to valid
+ * @param user the user data to issue
+ * @return {string|null}
+ */
 function issueCodeToken(ctx, code, user) {
-    const next_token_secret = `${ctx.jwt_secret}_${code}`;
-    const issue_options = general_issue_options({ctx, type: "code"});
-    const payload = {user, sub: user._id || user.email, jti: uuidV4(null, null, null)};
-    return jwt.sign(payload, next_token_secret, issue_options, null);
+    const nextTokenSecret = `${ctx.jwt_secret}_${code}`;
+    const issueOptions = generalIssueOptions({ctx, type: "code"});
+    const payload = {
+        user, sub: user._id || user.email,
+        jti: uuidV4(null, null, null),
+    };
+    return jwt.sign(payload, nextTokenSecret, issueOptions, null);
 }
 
-// Validate function (Auth)
+/**
+ * Validate function (Auth)
+ * @param {object} ctx the context variable from app.js
+ * @param {string} token the token to valid
+ * @return {boolean|object}
+ */
 function validateAuthToken(ctx, token) {
     try {
-        const validate_options = general_validate_options({ctx});
-        const data = jwt.verify(token, ctx.jwt_secret, validate_options, null);
-        if (data?.header?.sara?.version !== 1 || data?.header?.sara?.type !== "auth") {
+        const validateOptions = generalValidateOptions({ctx});
+        const data = jwt.verify(token, ctx.jwt_secret, validateOptions, null);
+        if (
+            data?.header?.sara?.version !== 1 ||
+            data?.header?.sara?.type !== "auth"
+        ) {
             console.error("invalid_sara_code_token");
             return false;
         }
@@ -78,13 +103,22 @@ function validateAuthToken(ctx, token) {
     }
 }
 
-// Validate function (Code)
+/**
+ * Validate function (Code)
+ * @param {object} ctx the context variable from app.js
+ * @param code the code to valid
+ * @param {string} token the token to valid
+ * @return {boolean|object}
+ */
 function validateCodeToken(ctx, code, token) {
     try {
-        const next_token_secret = `${ctx.jwt_secret}_${code}`;
-        const validate_options = general_validate_options({ctx});
-        const data = jwt.verify(token, next_token_secret, validate_options, null);
-        if (data?.header?.sara?.version !== 1 || data?.header?.sara?.type !== "code") {
+        const nextTokenSecret = `${ctx.jwt_secret}_${code}`;
+        const validateOptions = generalValidateOptions({ctx});
+        const data = jwt.verify(token, nextTokenSecret, validateOptions, null);
+        if (
+            data?.header?.sara?.version !== 1 ||
+            data?.header?.sara?.type !== "code"
+        ) {
             console.error("invalid_sara_code_token");
             return false;
         }
@@ -95,11 +129,16 @@ function validateCodeToken(ctx, code, token) {
     }
 }
 
-// Replay attack protection
-function isGone(ctx, token_data) {
-    const key_name = `Token:${token_data.jti}`;
-    if (ctx.cache.has(key_name)) return true;
-    ctx.cache.set(key_name, token_data.iat, token_data.exp - ctx.now());
+/**
+ * Replay attack protection
+ * @param {object} ctx the context variable from app.js
+ * @param {object} tokenData the data decoded from token
+ * @return {boolean}
+ */
+function isGone(ctx, tokenData) {
+    const keyName = `Token:${tokenData.jti}`;
+    if (ctx.cache.has(keyName)) return true;
+    ctx.cache.set(keyName, tokenData.iat, tokenData.exp - ctx.now());
     return false;
 }
 

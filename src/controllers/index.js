@@ -1,9 +1,9 @@
 const routes = [
-    require('./login'),
-    require('./profile'),
-    require('./register'),
-    require('./token'),
-    require('./user'),
+    require("./login"),
+    require("./profile"),
+    require("./register"),
+    require("./token"),
+    require("./user"),
 ];
 
 module.exports = (ctx, app) => {
