@@ -86,7 +86,7 @@ module.exports = (ctx, r) => {
         middleware.inspector,
         async (req, res) => {
             const updateEmailTokenData = util.sara_token.validateCodeToken(
-                ctx, req.body.code, req.body.updateEmailToken,
+                ctx, req.body.code, req.body.update_email_token,
             );
             if (
                 !updateEmailTokenData ||

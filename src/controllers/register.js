@@ -55,11 +55,11 @@ module.exports = (ctx, r) => {
     router.post("/verify",
         middleware.validator.body("code").isNumeric(),
         middleware.validator.body("code").isLength({min: 7, max: 7}),
-        middleware.validator.body("registerToken").isString(),
+        middleware.validator.body("register_token").isString(),
         middleware.inspector,
         async (req, res) => {
             const registerTokenData = util.sara_token.validateCodeToken(
-                ctx, req.body.code, req.body.registerToken,
+                ctx, req.body.code, req.body.register_token,
             );
             if (!registerTokenData) {
                 res.sendStatus(StatusCodes.UNAUTHORIZED);

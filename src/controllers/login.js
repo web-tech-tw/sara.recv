@@ -53,7 +53,7 @@ module.exports = (ctx, r) => {
         middleware.inspector,
         async (req, res) => {
             const nextTokenData = util.sara_token.validateCodeToken(
-                ctx, req.body.code, req.body.nextToken,
+                ctx, req.body.code, req.body.next_token,
             );
             if (!nextTokenData) {
                 res.sendStatus(StatusCodes.UNAUTHORIZED);
