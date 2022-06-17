@@ -2,10 +2,9 @@ const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
 // Import modules
-const
-    util = {
-        sara_token: require("../utils/sara_token"),
-    };
+const util = {
+    sara_token: require("../utils/sara_token"),
+};
 const middleware = {
     inspector: require("../middlewares/inspector"),
     validator: require("express-validator"),

@@ -2,8 +2,6 @@ const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
 // Import modules
-const
-    crypto = require("crypto");
 const util = {
     mail_sender: require("../utils/mail_sender"),
     sara_token: require("../utils/sara_token"),
@@ -44,8 +42,13 @@ module.exports = (ctx, r) => {
             user.updated_at = ctx.now();
             const metadata = await user.save();
             ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
-            const token = util.sara_token.issueAuthToken(ctx, metadata);
-            res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
+            const {token, secret} = util.sara_token.issueAuthToken(
+                ctx, metadata,
+            );
+            res
+                .status(StatusCodes.CREATED)
+                .header("Sara-Issue", token)
+                .send({secret});
         },
     );
 
@@ -54,7 +57,13 @@ module.exports = (ctx, r) => {
         middleware.validator.body("email").isEmail(),
         middleware.inspector,
         async (req, res) => {
-            const code = crypto.randomInt(10000000, 99999999);
+            const metadata = {
+                _id: req.authenticated.sub,
+                email: req.body.email,
+            };
+            const {token, code} = util.sara_token.issueCodeToken(
+                ctx, 8, metadata,
+            );
             const data = {
                 to: req.body.email,
                 website: process.env.WEBSITE_URL,
@@ -67,14 +76,7 @@ module.exports = (ctx, r) => {
                 res.sendStatus(StatusCodes.CONFLICT);
                 return;
             }
-            const metadata = {
-                _id: req.authenticated.sub,
-                email: req.body.email,
-            };
-            const updateEmailToken = util.sara_token.issueCodeToken(
-                ctx, code, metadata,
-            );
-            res.send({update_email_token: updateEmailToken});
+            res.send({update_email_token: token});
         },
     );
 
@@ -85,32 +87,34 @@ module.exports = (ctx, r) => {
         middleware.validator.body("update_email_token").isString(),
         middleware.inspector,
         async (req, res) => {
-            const updateEmailTokenData = util.sara_token.validateCodeToken(
+            const tokenData = util.sara_token.validateCodeToken(
                 ctx, req.body.code, req.body.update_email_token,
             );
-            if (
-                !updateEmailTokenData ||
-                updateEmailTokenData.sub !== req.authenticated.sub
-            ) {
+            if (!tokenData||tokenData.sub !== req.tokenData.sub) {
                 res.sendStatus(StatusCodes.UNAUTHORIZED);
                 return;
             }
-            if (util.sara_token.isGone(ctx, updateEmailTokenData)) {
+            if (util.sara_token.isGone(ctx, tokenData)) {
                 res.sendStatus(StatusCodes.GONE);
                 return;
             }
             const User = ctx.database.model("User", schema.user);
-            const user = await User.findById(updateEmailTokenData.sub).exec();
+            const user = await User.findById(tokenData.sub).exec();
             if (!user) {
                 res.sendStatus(StatusCodes.NOT_FOUND);
                 return;
             }
-            user.email = updateEmailTokenData.user.email;
+            user.email = tokenData.user.email;
             user.updated_at = ctx.now();
             const metadata = await user.save();
             ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
-            const token = util.sara_token.issueAuthToken(ctx, metadata);
-            res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
+            const {token, secret} = util.sara_token.issueAuthToken(
+                ctx, metadata,
+            );
+            res
+                .status(StatusCodes.CREATED)
+                .header("Sara-Issue", token)
+                .send({secret});
         },
     );
 

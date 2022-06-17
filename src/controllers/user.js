@@ -2,10 +2,9 @@ const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
 // Import modules
-const
-    schema = {
-        user: require("../schemas/user"),
-    };
+const schema = {
+    user: require("../schemas/user"),
+};
 const middleware = {
     access: require("../middlewares/access"),
     inspector: require("../middlewares/inspector"),

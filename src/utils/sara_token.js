@@ -1,6 +1,9 @@
 "use strict";
 // Token utils of Sara.
 
+// Import crypto
+const crypto = require("crypto");
+
 // Import jsonwebtoken
 const jwt = require("jsonwebtoken");
 
@@ -50,33 +53,52 @@ const generalValidateOptions = (metadata) => ({
 /**
  *
  * @param {object} ctx the context variable from app.js
- * @param user the user data to issue
- * @return {string|null}
+ * @param {object} user the user data to issue
+ * @return {object|null}
  */
 function issueAuthToken(ctx, user) {
     const issueOptions = generalIssueOptions({ctx, type: "auth"});
+    const jti = uuidV4(null, null, null);
+    const secret = crypto.randomInt(2048, 1000000).toString();
     const payload = {
+        jti,
         user, sub: user._id || user.email,
-        jti: uuidV4(null, null, null),
+        sec: sha256([jti, secret].join(".")),
     };
-    return jwt.sign(payload, ctx.jwt_secret, issueOptions, null);
+    const token = jwt.sign(
+        payload,
+        ctx.jwt_secret,
+        issueOptions,
+        null,
+    );
+    return {token, secret};
 }
 
 /**
  * Issue function (Code)
  * @param {object} ctx the context variable from app.js
- * @param code the code to valid
- * @param user the user data to issue
- * @return {string|null}
+ * @param {number} codeLength length of code to issue
+ * @param {object} data the metadata to pass
+ * @return {object|null}
  */
-function issueCodeToken(ctx, code, user) {
-    const nextTokenSecret = `${ctx.jwt_secret}_${code}`;
+function issueCodeToken(ctx, codeLength, data) {
+    const code = crypto.randomInt(
+        10 ** (codeLength - 1),
+        (10 ** codeLength) - 1,
+    ).toString();
+    const jwtSecret = `${ctx.jwt_secret}_${code}`;
     const issueOptions = generalIssueOptions({ctx, type: "code"});
     const payload = {
-        user, sub: user._id || user.email,
+        data, sub: data._id || data.email,
         jti: uuidV4(null, null, null),
     };
-    return jwt.sign(payload, nextTokenSecret, issueOptions, null);
+    const token = jwt.sign(
+        payload,
+        jwtSecret,
+        issueOptions,
+        null,
+    );
+    return {token, code};
 }
 
 /**
@@ -106,7 +128,7 @@ function validateAuthToken(ctx, token) {
 /**
  * Validate function (Code)
  * @param {object} ctx the context variable from app.js
- * @param code the code to valid
+ * @param {string} code the code to valid
  * @param {string} token the token to valid
  * @return {boolean|object}
  */

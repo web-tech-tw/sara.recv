@@ -2,8 +2,6 @@ const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
 // Import modules
-const
-    crypto = require("crypto");
 const util = {
     mail_sender: require("../utils/mail_sender"),
     sara_token: require("../utils/sara_token"),
@@ -26,7 +24,15 @@ module.exports = (ctx, r) => {
         middleware.validator.body("email").isEmail(),
         middleware.inspector,
         async (req, res) => {
-            const code = crypto.randomInt(1000000, 9999999);
+            const metadata = {
+                nickname: req.body.nickname,
+                email: req.body.email,
+                created_at: ctx.now(),
+                updated_at: ctx.now(),
+            };
+            const {token, code} = util.sara_token.issueCodeToken(
+                ctx, 7, metadata,
+            );
             const data = {
                 to: req.body.email,
                 website: process.env.WEBSITE_URL,
@@ -39,16 +45,7 @@ module.exports = (ctx, r) => {
                 res.sendStatus(StatusCodes.CONFLICT);
                 return;
             }
-            const metadata = {
-                nickname: req.body.nickname,
-                email: req.body.email,
-                created_at: ctx.now(),
-                updated_at: ctx.now(),
-            };
-            const registerToken = util.sara_token.issueCodeToken(
-                ctx, code, metadata,
-            );
-            res.send({register_token: registerToken});
+            res.send({register_token: token});
         },
     );
 
@@ -58,25 +55,31 @@ module.exports = (ctx, r) => {
         middleware.validator.body("register_token").isString(),
         middleware.inspector,
         async (req, res) => {
-            const registerTokenData = util.sara_token.validateCodeToken(
+            const tokenData = util.sara_token.validateCodeToken(
                 ctx, req.body.code, req.body.register_token,
             );
-            if (!registerTokenData) {
+            if (!tokenData) {
                 res.sendStatus(StatusCodes.UNAUTHORIZED);
                 return;
             }
-            if (util.sara_token.isGone(ctx, registerTokenData)) {
+            if (util.sara_token.isGone(ctx, tokenData)) {
                 res.sendStatus(StatusCodes.GONE);
                 return;
             }
             const User = ctx.database.model("User", schema.user);
-            if (await User.findOne({email: registerTokenData.sub})) {
+            if (await User.findOne({email: tokenData.sub})) {
                 res.sendStatus(StatusCodes.CONFLICT);
                 return;
             }
-            const metadata = await (new User(registerTokenData.user)).save();
-            const token = util.sara_token.issueAuthToken(ctx, metadata);
-            res.header("Sara-Issue", token).sendStatus(StatusCodes.CREATED);
+            const user = new User(tokenData.user);
+            const metadata = await user.save();
+            const {token, secret} = util.sara_token.issueAuthToken(
+                ctx, metadata,
+            );
+            res
+                .status(StatusCodes.CREATED)
+                .header("Sara-Issue", token)
+                .send({secret});
         },
     );
 
