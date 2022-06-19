@@ -6,6 +6,7 @@ const util = {
     mail_sender: require("../utils/mail_sender"),
     sara_token: require("../utils/sara_token"),
     ip_address: require("../utils/ip_address"),
+    user: require("../utils/user"),
 };
 const schema = {
     user: require("../schemas/user"),
@@ -72,7 +73,7 @@ module.exports = (ctx, r) => {
                 return;
             }
             const user = new User(tokenData.user);
-            const metadata = await user.save();
+            const metadata = await util.user.saveData(ctx, user);
             const {token, secret} = util.sara_token.issueAuthToken(
                 ctx, metadata,
             );

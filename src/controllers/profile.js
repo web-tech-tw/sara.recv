@@ -6,6 +6,7 @@ const util = {
     mail_sender: require("../utils/mail_sender"),
     sara_token: require("../utils/sara_token"),
     ip_address: require("../utils/ip_address"),
+    user: require("../utils/user"),
 };
 const schema = {
     user: require("../schemas/user"),
@@ -23,7 +24,7 @@ module.exports = (ctx, r) => {
     router.get("/",
         middleware.access(null),
         async (req, res) => {
-            res.send({profile: req.authenticated.user});
+            res.send({profile: req.auth.metadata.user});
         },
     );
 
@@ -31,17 +32,15 @@ module.exports = (ctx, r) => {
         middleware.access(null),
         async (req, res) => {
             const User = ctx.database.model("User", schema.user);
-            const user = await User.findById(req.authenticated.sub).exec();
+            const user = await User.findById(req.auth.id).exec();
             if (!user) {
                 res.sendStatus(StatusCodes.NOT_FOUND);
                 return;
             }
             user.nickname =
                 req?.body?.nickname ||
-                req.authenticated.user.nickname;
-            user.updated_at = ctx.now();
-            const metadata = await user.save();
-            ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
+                req.auth.metadata.user.nickname;
+            const metadata = await util.user.saveData(ctx, user);
             const {token, secret} = util.sara_token.issueAuthToken(
                 ctx, metadata,
             );
@@ -58,7 +57,7 @@ module.exports = (ctx, r) => {
         middleware.inspector,
         async (req, res) => {
             const metadata = {
-                _id: req.authenticated.sub,
+                _id: req.auth.id,
                 email: req.body.email,
             };
             const {token, code} = util.sara_token.issueCodeToken(
@@ -90,7 +89,7 @@ module.exports = (ctx, r) => {
             const tokenData = util.sara_token.validateCodeToken(
                 ctx, req.body.code, req.body.update_email_token,
             );
-            if (!tokenData||tokenData.sub !== req.tokenData.sub) {
+            if ((!tokenData) || (tokenData.sub !== req.auth.id)) {
                 res.sendStatus(StatusCodes.UNAUTHORIZED);
                 return;
             }
@@ -99,15 +98,13 @@ module.exports = (ctx, r) => {
                 return;
             }
             const User = ctx.database.model("User", schema.user);
-            const user = await User.findById(tokenData.sub).exec();
+            const user = await User.findById(req.auth.id).exec();
             if (!user) {
                 res.sendStatus(StatusCodes.NOT_FOUND);
                 return;
             }
             user.email = tokenData.user.email;
-            user.updated_at = ctx.now();
-            const metadata = await user.save();
-            ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
+            const metadata = util.user.saveData(ctx, user);
             const {token, secret} = util.sara_token.issueAuthToken(
                 ctx, metadata,
             );

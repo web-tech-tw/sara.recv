@@ -62,7 +62,8 @@ function issueAuthToken(ctx, user) {
     const secret = crypto.randomInt(2048, 1000000).toString();
     const payload = {
         jti,
-        user, sub: user._id || user.email,
+        user,
+        sub: user._id || user.email,
         sec: sha256([jti, secret].join(".")),
     };
     const token = jwt.sign(
@@ -89,7 +90,8 @@ function issueCodeToken(ctx, codeLength, data) {
     const jwtSecret = `${ctx.jwt_secret}_${code}`;
     const issueOptions = generalIssueOptions({ctx, type: "code"});
     const payload = {
-        data, sub: data._id || data.email,
+        data,
+        sub: data._id || data.email,
         jti: uuidV4(null, null, null),
     };
     const token = jwt.sign(

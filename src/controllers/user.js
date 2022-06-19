@@ -2,6 +2,9 @@ const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
 // Import modules
+const util = {
+    user: require("../utils/user"),
+};
 const schema = {
     user: require("../schemas/user"),
 };
@@ -57,9 +60,7 @@ module.exports = (ctx, r) => {
             } else {
                 user.roles.push(req.body.role);
             }
-            user.updated_at = ctx.now();
-            await user.save();
-            ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
+            await util.user.saveData(ctx, user);
             res.sendStatus(StatusCodes.CREATED);
         },
     );
@@ -93,9 +94,7 @@ module.exports = (ctx, r) => {
                 res.sendStatus(StatusCodes.GONE);
                 return;
             }
-            user.updated_at = ctx.now();
-            await user.save();
-            ctx.cache.set(`TokenU:${req.authenticated.sub}`, ctx.now(), 3600);
+            await util.user.saveData(ctx, user);
             res.sendStatus(StatusCodes.NO_CONTENT);
         },
     );
