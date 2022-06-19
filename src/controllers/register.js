@@ -1,3 +1,5 @@
+"use strict";
+
 const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
@@ -40,13 +42,17 @@ module.exports = (ctx, r) => {
                 ip_address: util.ip_address(req),
                 code,
             };
-            util.mail_sender("register", data).catch(console.error);
+            util.mail_sender(ctx, "register", data).catch(console.error);
             const User = ctx.database.model("User", schema.user);
             if (await User.findOne({email: req.body.email}).exec()) {
                 res.sendStatus(StatusCodes.CONFLICT);
                 return;
             }
-            res.send({register_token: token});
+            const result = {register_token: token};
+            if (ctx.testing) {
+                result.code = data.code;
+            }
+            res.send(result);
         },
     );
 

@@ -37,7 +37,7 @@ app.get("/ip", (req, res) => {
     res.send({ip_address: util.ip_address(req)});
 });
 
-// Map Routes
+// Map routes
 require("./src/controllers/index")(ctx, app);
 
 // Show status message

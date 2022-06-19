@@ -1,3 +1,5 @@
+"use strict";
+
 const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
@@ -38,8 +40,12 @@ module.exports = (ctx, r) => {
                 ip_address: util.ip_address(req),
                 code,
             };
-            util.mail_sender("login", data).catch(console.error);
-            res.send({next_token: token});
+            util.mail_sender(ctx, "login", data).catch(console.error);
+            const result = {next_token: token};
+            if (ctx.testing) {
+                result.code = code;
+            }
+            res.send(result);
         },
     );
 

@@ -2,6 +2,7 @@
 // Mail Sender of Sara
 
 const nodemailer = require("nodemailer");
+const testing = require("./testing");
 
 const transporter = nodemailer.createTransport({
     host: process.env.MAIL_SMTP_HOST,
@@ -13,7 +14,13 @@ const transporter = nodemailer.createTransport({
     } : null,
 });
 
-module.exports = function(template, data) {
+module.exports = function(ctx, template, data) {
+    if (ctx.testing) {
+        return new Promise((resolve) => {
+            testing.log("\nmail template:", template, "\nmail data:", data);
+            resolve();
+        });
+    }
     const {subject, text, html} = require(`../templates/mail/${template}.js`);
     return transporter.sendMail({
         from: process.env.MAIL_SMTP_FROM,

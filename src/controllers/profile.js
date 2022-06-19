@@ -1,3 +1,5 @@
+"use strict";
+
 const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
@@ -69,7 +71,7 @@ module.exports = (ctx, r) => {
                 ip_address: util.ip_address(req),
                 code,
             };
-            util.mail_sender("update_email", data).catch(console.error);
+            util.mail_sender(ctx, "update_email", data).catch(console.error);
             const User = ctx.database.model("User", schema.user);
             if (await User.findOne({email: req.body.email}).exec()) {
                 res.sendStatus(StatusCodes.CONFLICT);

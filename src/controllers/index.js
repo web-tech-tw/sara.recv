@@ -1,3 +1,5 @@
+"use strict";
+
 const routes = [
     require("./login"),
     require("./profile"),
