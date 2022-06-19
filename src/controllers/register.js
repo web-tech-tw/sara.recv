@@ -41,7 +41,7 @@ module.exports = (ctx, r) => {
             };
             util.mail_sender("register", data).catch(console.error);
             const User = ctx.database.model("User", schema.user);
-            if (await User.findOne({email: req.body.email})) {
+            if (await User.findOne({email: req.body.email}).exec()) {
                 res.sendStatus(StatusCodes.CONFLICT);
                 return;
             }
@@ -67,7 +67,7 @@ module.exports = (ctx, r) => {
                 return;
             }
             const User = ctx.database.model("User", schema.user);
-            if (await User.findOne({email: tokenData.sub})) {
+            if (await User.findOne({email: tokenData.sub}).exec()) {
                 res.sendStatus(StatusCodes.CONFLICT);
                 return;
             }

@@ -72,7 +72,7 @@ module.exports = (ctx, r) => {
             };
             util.mail_sender("update_email", data).catch(console.error);
             const User = ctx.database.model("User", schema.user);
-            if (await User.findOne({email: req.body.email})) {
+            if (await User.findOne({email: req.body.email}).exec()) {
                 res.sendStatus(StatusCodes.CONFLICT);
                 return;
             }

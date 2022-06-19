@@ -24,7 +24,7 @@ module.exports = (ctx, r) => {
         middleware.inspector,
         async (req, res) => {
             const User = ctx.database.model("User", schema.user);
-            if (!(await User.findOne({email: req.body.email}))) {
+            if (!(await User.findOne({email: req.body.email}).exec())) {
                 res.sendStatus(StatusCodes.NOT_FOUND);
                 return;
             }
