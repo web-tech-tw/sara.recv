@@ -40,6 +40,14 @@ module.exports = (ctx) => function(req, res, next) {
             if (!req.auth.metadata) {
                 req.auth.metadata = result;
             }
+            if (!req.auth.id) {
+                req.auth.id =
+                    result?.id ||
+                    result?.sub ||
+                    result?.user?.id ||
+                    result?.data?.id ||
+                    null;
+            }
             next();
         })
         .catch((error) => {
