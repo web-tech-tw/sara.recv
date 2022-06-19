@@ -13,8 +13,8 @@
     "start": "node app.js",
     "lint": "eslint \"app.js\" \"new_secret.js\" \"src/**/*.js\"",
     "lint:fix": "eslint \"app.js\" \"new_secret.js\" \"src/**/*.js\" --fix",
-    "test": "mocha tests --exit --recursive --timeout 5000",
-    "cover": "nyc mocha tests --recursive --timeout 5000 --exit"
+    "test": "mocha test --exit --recursive --timeout 5000",
+    "cover": "nyc mocha test --recursive --timeout 5000 --exit"
   },
   "dependencies": {
     "cors": "^2.8.5",
