@@ -103,7 +103,7 @@ module.exports = (ctx, r) => {
                 res.sendStatus(StatusCodes.NOT_FOUND);
                 return;
             }
-            user.email = tokenData.user.email;
+            user.email = tokenData.data.email;
             const metadata = util.user.saveData(ctx, user);
             const {token, secret} = util.sara_token.issueAuthToken(
                 ctx, metadata,

@@ -72,7 +72,7 @@ module.exports = (ctx, r) => {
                 res.sendStatus(StatusCodes.CONFLICT);
                 return;
             }
-            const user = new User(tokenData.user);
+            const user = new User(tokenData.data);
             const metadata = await util.user.saveData(ctx, user);
             const {token, secret} = util.sara_token.issueAuthToken(
                 ctx, metadata,
