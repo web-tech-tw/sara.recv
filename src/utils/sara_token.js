@@ -51,9 +51,9 @@ const generalValidateOptions = (metadata) => ({
 });
 
 /**
- *
- * @param {object} ctx the context variable from app.js
- * @param {object} user the user data to issue
+ * Issue function (Auth)
+ * @param {object} ctx - The context variable from app.js.
+ * @param {object} user - The user data to issue.
  * @return {object|null}
  */
 function issueAuthToken(ctx, user) {
@@ -77,9 +77,9 @@ function issueAuthToken(ctx, user) {
 
 /**
  * Issue function (Code)
- * @param {object} ctx the context variable from app.js
- * @param {number} codeLength length of code to issue
- * @param {object} data the metadata to pass
+ * @param {object} ctx - The context variable from app.js.
+ * @param {number} codeLength - Length of code to issue.
+ * @param {object} data - The metadata to pass
  * @return {object|null}
  */
 function issueCodeToken(ctx, codeLength, data) {
@@ -105,8 +105,8 @@ function issueCodeToken(ctx, codeLength, data) {
 
 /**
  * Validate function (Auth)
- * @param {object} ctx the context variable from app.js
- * @param {string} token the token to valid
+ * @param {object} ctx - The context variable from app.js.
+ * @param {string} token - The token to valid.
  * @return {boolean|object}
  */
 function validateAuthToken(ctx, token) {
@@ -129,9 +129,9 @@ function validateAuthToken(ctx, token) {
 
 /**
  * Validate function (Code)
- * @param {object} ctx the context variable from app.js
- * @param {string} code the code to valid
- * @param {string} token the token to valid
+ * @param {object} ctx - The context variable from app.js.
+ * @param {string} code - The code to valid.
+ * @param {string} token - The token to valid.
  * @return {boolean|object}
  */
 function validateCodeToken(ctx, code, token) {
@@ -154,9 +154,9 @@ function validateCodeToken(ctx, code, token) {
 }
 
 /**
- * Replay attack protection
- * @param {object} ctx the context variable from app.js
- * @param {object} tokenData the data decoded from token
+ * Replay attack protection.
+ * @param {object} ctx - The context variable from app.js.
+ * @param {object} tokenData - The data decoded from token.
  * @return {boolean}
  */
 function isGone(ctx, tokenData) {

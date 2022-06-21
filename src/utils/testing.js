@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Print message with testing notification
+ * Print message with testing notification.
  * @param {any} messages
  */
 function log(...messages) {

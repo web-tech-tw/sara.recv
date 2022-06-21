@@ -2,9 +2,9 @@
 // User utils
 
 /**
- * Save user data with hooks
- * @param {object} ctx
- * @param {object} user
+ * Save user data with hooks.
+ * @param {object} ctx - The context variable from app.js.
+ * @param {object} user - The user to save data.
  * @return {Promise<object>}
  */
 async function saveData(ctx, user) {
