@@ -8,6 +8,12 @@
 npm run dev
 ```
 
+## Testing
+
+```shell
+npm run test
+```
+
 ## Production
 
 ```shell

@@ -3,18 +3,22 @@
 // Import supertest
 const request = require("supertest");
 
+// Import mocha-steps
+const {step} = require("mocha-steps");
+
 // Import StatusCodes
 const {StatusCodes} = require("http-status-codes");
 
 // Initialize tests
 const {app, urlHelper} = require("./init");
+const testing = require("../src/utils/testing");
 const to = urlHelper("/login");
 
 // Define tests
 describe("/login", function() {
     let nextToken;
 
-    it("login (request nextToken)", function(done) {
+    step("login (request nextToken)", function(done) {
         request(app)
             .post(to("/"))
             .send({
@@ -33,7 +37,7 @@ describe("/login", function() {
             });
     });
 
-    it("verify (get authToken)", function(done) {
+    step("verify (get authToken)", function(done) {
         request(app)
             .post(to("/verify"))
             .send(nextToken)
@@ -42,7 +46,7 @@ describe("/login", function() {
             .expect("Content-Type", /json/)
             .expect(StatusCodes.CREATED)
             .then((res) => {
-                console.log({
+                testing.log({
                     token: res.headers["sara-issue"],
                     metadata: res.body,
                 });
@@ -53,5 +57,4 @@ describe("/login", function() {
                 done(e);
             });
     });
-})
-;
+});

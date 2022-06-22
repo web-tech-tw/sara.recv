@@ -3,11 +3,15 @@
 // Import supertest
 const request = require("supertest");
 
+// Import mocha-steps
+const {step} = require("mocha-steps");
+
 // Import StatusCodes
 const {StatusCodes} = require("http-status-codes");
 
 // Initialize tests
 const {app, ctx, urlHelper} = require("./init");
+const testing = require("../src/utils/testing");
 const to = urlHelper("/register");
 
 // Define tests
@@ -19,7 +23,7 @@ describe("/register", function() {
         ctx.database.connection.dropDatabase(() => done());
     });
 
-    it("register (request registerToken)", function(done) {
+    step("register (request registerToken)", function(done) {
         request(app)
             .post(to("/"))
             .send({
@@ -39,7 +43,7 @@ describe("/register", function() {
             });
     });
 
-    it("verify (get authToken)", function(done) {
+    step("verify (get authToken)", function(done) {
         request(app)
             .post(to("/verify"))
             .send(registerToken)
@@ -47,6 +51,16 @@ describe("/register", function() {
             .set("Accept", "application/json")
             .expect("Content-Type", /json/)
             .expect(StatusCodes.CREATED)
-            .then(() => done());
+            .then((res) => {
+                testing.log({
+                    token: res.headers["sara-issue"],
+                    metadata: res.body,
+                });
+                done();
+            })
+            .catch((e) => {
+                console.error(e);
+                done(e);
+            });
     });
 });
