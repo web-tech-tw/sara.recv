@@ -136,9 +136,9 @@ function validateAuthToken(ctx, token) {
  */
 function validateCodeToken(ctx, code, token) {
     try {
-        const nextTokenSecret = `${ctx.jwt_secret}_${code}`;
+        const jwtSecret = `${ctx.jwt_secret}_${code}`;
         const validateOptions = generalValidateOptions({ctx});
-        const data = jwt.verify(token, nextTokenSecret, validateOptions, null);
+        const data = jwt.verify(token, jwtSecret, validateOptions, null);
         if (
             data?.header?.sara?.version !== 1 ||
             data?.header?.sara?.type !== "code"

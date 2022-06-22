@@ -7,18 +7,21 @@ const request = require("supertest");
 const {StatusCodes} = require("http-status-codes");
 
 // Initialize tests
-const {app, ctx} = require("./init");
+const {app, ctx, urlHelper} = require("./init");
+const to = urlHelper("/register");
 
 // Define tests
-beforeEach((done) => {
-    // Reset database before every register test
-    ctx.database.connection.dropDatabase(() => done());
-});
+describe("/register", function() {
+    let registerToken;
 
-describe("POST /register", function() {
-    it("register a user", function(done) {
+    before((done) => {
+        // Reset database before every register test
+        ctx.database.connection.dropDatabase(() => done());
+    });
+
+    it("register (request registerToken)", function(done) {
         request(app)
-            .post("/register")
+            .post(to("/"))
             .send({
                 nickname: "Sara Hoshikawa",
                 email: "sara@web-tech.github.io",
@@ -26,18 +29,24 @@ describe("POST /register", function() {
             .type("form")
             .set("Accept", "application/json")
             .expect(StatusCodes.OK)
-            .then((res) => request(app)
-                .post("/register/verify")
-                .send(res.body)
-                .type("form")
-                .set("Accept", "application/json")
-                .expect("Content-Type", /json/)
-                .expect(StatusCodes.CREATED)
-                .then(() => done())
-            )
+            .then((res) => {
+                registerToken = res.body;
+                done();
+            })
             .catch((e) => {
                 console.error(e);
                 done(e);
             });
+    });
+
+    it("verify (get authToken)", function(done) {
+        request(app)
+            .post(to("/verify"))
+            .send(registerToken)
+            .type("form")
+            .set("Accept", "application/json")
+            .expect("Content-Type", /json/)
+            .expect(StatusCodes.CREATED)
+            .then(() => done());
     });
 });

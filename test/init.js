@@ -12,6 +12,9 @@ const ctx = {
     jwt_secret: require("../src/init/jwt_secret"),
 };
 
+// URL Helper
+const urlHelper = (baseUrl) => (path) => baseUrl + path;
+
 // Initialize application
 const app = require("../src/init/express")(ctx);
 
@@ -19,4 +22,4 @@ const app = require("../src/init/express")(ctx);
 require("../src/controllers/index")(ctx, app);
 
 // Export (object)
-module.exports = {app, ctx};
+module.exports = {app, ctx, urlHelper};

@@ -7,34 +7,47 @@ const request = require("supertest");
 const {StatusCodes} = require("http-status-codes");
 
 // Initialize tests
-const {app} = require("./init");
+const {app, urlHelper} = require("./init");
+const to = urlHelper("/login");
 
 // Define tests
-describe("POST /login", function() {
-    it("login", function(done) {
+describe("/login", function() {
+    let nextToken;
+
+    it("login (request nextToken)", function(done) {
         request(app)
-            .post("/login")
+            .post(to("/"))
             .send({
                 email: "sara@web-tech.github.io",
             })
             .type("form")
             .set("Accept", "application/json")
             .expect(StatusCodes.OK)
-            .then((res) => request(app)
-                .post("/login/verify")
-                .send(res.body)
-                .type("form")
-                .set("Accept", "application/json")
-                .expect("Content-Type", /json/)
-                .expect(StatusCodes.CREATED)
-                .then((res) => {
-                    console.log({
-                        token: res.headers["sara-issue"],
-                        metadata: res.body,
-                    });
-                    done();
-                })
-            )
+            .then((res) => {
+                nextToken = res.body;
+                done();
+            })
+            .catch((e) => {
+                console.error(e);
+                done(e);
+            });
+    });
+
+    it("verify (get authToken)", function(done) {
+        request(app)
+            .post(to("/verify"))
+            .send(nextToken)
+            .type("form")
+            .set("Accept", "application/json")
+            .expect("Content-Type", /json/)
+            .expect(StatusCodes.CREATED)
+            .then((res) => {
+                console.log({
+                    token: res.headers["sara-issue"],
+                    metadata: res.body,
+                });
+                done();
+            })
             .catch((e) => {
                 console.error(e);
                 done(e);
