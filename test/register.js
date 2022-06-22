@@ -10,31 +10,28 @@ const {step} = require("mocha-steps");
 const {StatusCodes} = require("http-status-codes");
 
 // Initialize tests
-const {app, ctx, urlHelper} = require("./init");
+const {app, ctx, fakeUser} = require("./init");
 const testing = require("../src/utils/testing");
-const to = urlHelper("/register");
+const to = testing.urlGlue("/login");
 
 // Define tests
 describe("/register", function() {
-    let registerToken;
+    let registerTokenWithSecret;
 
     before((done) => {
-        // Reset database before every register test
+        // Reset database before test
         ctx.database.connection.dropDatabase(() => done());
     });
 
     step("register (request registerToken)", function(done) {
         request(app)
             .post(to("/"))
-            .send({
-                nickname: "Sara Hoshikawa",
-                email: "sara@web-tech.github.io",
-            })
+            .send(fakeUser)
             .type("form")
             .set("Accept", "application/json")
             .expect(StatusCodes.OK)
             .then((res) => {
-                registerToken = res.body;
+                registerTokenWithSecret = res.body;
                 done();
             })
             .catch((e) => {
@@ -46,7 +43,7 @@ describe("/register", function() {
     step("verify (get authToken)", function(done) {
         request(app)
             .post(to("/verify"))
-            .send(registerToken)
+            .send(registerTokenWithSecret)
             .type("form")
             .set("Accept", "application/json")
             .expect("Content-Type", /json/)

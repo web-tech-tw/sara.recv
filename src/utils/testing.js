@@ -9,4 +9,13 @@ function log(...messages) {
     console.log("[!] Test mode:", ...messages);
 }
 
-module.exports = {log};
+/**
+ * Create a helper to merge base URL and path.
+ * @param {string} baseUrl - The base URL
+ * @return {function(string)}
+ */
+function urlGlue(baseUrl) {
+    return (path) => baseUrl + path;
+}
+
+module.exports = {log, urlGlue};
