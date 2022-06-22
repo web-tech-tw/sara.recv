@@ -22,7 +22,7 @@ module.exports = (ctx, r) => {
 
     router.get("/",
         middleware.access("admin"),
-        middleware.validator.query("user_id"),
+        middleware.validator.query("user_id").isString().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const User = ctx.database.model("User", schema.user);
@@ -37,8 +37,8 @@ module.exports = (ctx, r) => {
 
     router.post("/role",
         middleware.access("admin"),
-        middleware.validator.body("user_id").isString(),
-        middleware.validator.body("role").isString(),
+        middleware.validator.body("user_id").isString().notEmpty(),
+        middleware.validator.body("role").isString().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const User = ctx.database.model("User", schema.user);
@@ -69,8 +69,8 @@ module.exports = (ctx, r) => {
 
     router.delete("/role",
         middleware.access("admin"),
-        middleware.validator.body("user_id").isString(),
-        middleware.validator.body("role").isString(),
+        middleware.validator.body("user_id").isString().notEmpty(),
+        middleware.validator.body("role").isString().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const User = ctx.database.model("User", schema.user);

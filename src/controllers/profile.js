@@ -55,7 +55,7 @@ module.exports = (ctx, r) => {
 
     router.put("/email",
         middleware.access(null),
-        middleware.validator.body("email").isEmail(),
+        middleware.validator.body("email").isEmail().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const metadata = {
@@ -83,9 +83,9 @@ module.exports = (ctx, r) => {
 
     router.post("/email/verify",
         middleware.access(null),
-        middleware.validator.body("code").isNumeric(),
-        middleware.validator.body("code").isLength({min: 8, max: 8}),
-        middleware.validator.body("update_email_token").isString(),
+        middleware.validator.body("code").isNumeric().notEmpty(),
+        middleware.validator.body("code").isLength({min: 8, max: 8}).notEmpty(),
+        middleware.validator.body("update_email_token").isString().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const tokenData = util.sara_token.validateCodeToken(

@@ -23,8 +23,8 @@ module.exports = (ctx, r) => {
     const router = expressRouter();
 
     router.post("/",
-        middleware.validator.body("nickname").isString(),
-        middleware.validator.body("email").isEmail(),
+        middleware.validator.body("nickname").isString().notEmpty(),
+        middleware.validator.body("email").isEmail().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const metadata = {
@@ -57,9 +57,9 @@ module.exports = (ctx, r) => {
     );
 
     router.post("/verify",
-        middleware.validator.body("code").isNumeric(),
-        middleware.validator.body("code").isLength({min: 7, max: 7}),
-        middleware.validator.body("register_token").isString(),
+        middleware.validator.body("code").isNumeric().notEmpty(),
+        middleware.validator.body("code").isLength({min: 7, max: 7}).notEmpty(),
+        middleware.validator.body("register_token").isString().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const tokenData = util.sara_token.validateCodeToken(

@@ -17,7 +17,7 @@ module.exports = (ctx, r) => {
     const router = expressRouter();
 
     router.post("/verify",
-        middleware.validator.body("token"),
+        middleware.validator.body("token").isString().notEmpty(),
         middleware.inspector,
         (req, res) => {
             const data = util.sara_token.validateAuthToken(ctx, req.body.token);
@@ -26,7 +26,7 @@ module.exports = (ctx, r) => {
     );
 
     router.post("/decode",
-        middleware.validator.body("token"),
+        middleware.validator.body("token").isString().notEmpty(),
         middleware.inspector,
         (req, res) => {
             const data = util.sara_token.validateAuthToken(ctx, req.body.token);
