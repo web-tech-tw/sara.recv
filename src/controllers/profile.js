@@ -47,9 +47,9 @@ module.exports = (ctx, r) => {
                 ctx, metadata,
             );
             res
-                .status(StatusCodes.CREATED)
                 .header("Sara-Issue", token)
-                .send({secret});
+                .header("Sara-Code", secret)
+                .sendStatus(StatusCodes.CREATED);
         },
     );
 
@@ -111,9 +111,9 @@ module.exports = (ctx, r) => {
                 ctx, metadata,
             );
             res
-                .status(StatusCodes.CREATED)
                 .header("Sara-Issue", token)
-                .send({secret});
+                .header("Sara-Code", secret)
+                .sendStatus(StatusCodes.CREATED);
         },
     );
 

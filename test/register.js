@@ -12,7 +12,7 @@ const {StatusCodes} = require("http-status-codes");
 // Initialize tests
 const {app, ctx, fakeUser} = require("./init");
 const testing = require("../src/utils/testing");
-const to = testing.urlGlue("/login");
+const to = testing.urlGlue("/register");
 
 // Define tests
 describe("/register", function() {
@@ -29,6 +29,7 @@ describe("/register", function() {
             .send(fakeUser)
             .type("form")
             .set("Accept", "application/json")
+            .expect("Content-Type", /json/)
             .expect(StatusCodes.OK)
             .then((res) => {
                 registerTokenWithSecret = res.body;
@@ -45,13 +46,13 @@ describe("/register", function() {
             .post(to("/verify"))
             .send(registerTokenWithSecret)
             .type("form")
-            .set("Accept", "application/json")
-            .expect("Content-Type", /json/)
+            .set("Accept", "text/plain")
+            .expect("Content-Type", /plain/)
             .expect(StatusCodes.CREATED)
             .then((res) => {
                 testing.log({
                     token: res.headers["sara-issue"],
-                    metadata: res.body,
+                    code: res.headers["sara-code"],
                 });
                 done();
             })

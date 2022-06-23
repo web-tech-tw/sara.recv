@@ -25,13 +25,14 @@ describe("/login", function() {
             .send(fakeUser)
             .type("form")
             .set("Accept", "application/json")
+            .expect("Content-Type", /json/)
             .expect(StatusCodes.OK)
             .then((res) => request(app)
                 .post("/register/verify")
                 .send(res.body)
                 .type("form")
-                .set("Accept", "application/json")
-                .expect("Content-Type", /json/)
+                .set("Accept", "text/plain")
+                .expect("Content-Type", /plain/)
                 .expect(StatusCodes.CREATED)
                 .then(() => done()))
             .catch(() => done());
@@ -43,6 +44,7 @@ describe("/login", function() {
             .send({email: fakeUser.email})
             .type("form")
             .set("Accept", "application/json")
+            .expect("Content-Type", /json/)
             .expect(StatusCodes.OK)
             .then((res) => {
                 nextTokenWithSecret = res.body;
@@ -59,13 +61,13 @@ describe("/login", function() {
             .post(to("/verify"))
             .send(nextTokenWithSecret)
             .type("form")
-            .set("Accept", "application/json")
-            .expect("Content-Type", /json/)
+            .set("Accept", "text/plain")
+            .expect("Content-Type", /plain/)
             .expect(StatusCodes.CREATED)
             .then((res) => {
                 testing.log({
                     token: res.headers["sara-issue"],
-                    metadata: res.body,
+                    code: res.headers["sara-code"],
                 });
                 done();
             })
