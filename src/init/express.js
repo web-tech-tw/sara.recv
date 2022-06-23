@@ -24,7 +24,7 @@ module.exports = (ctx) => {
         const cors = require("cors");
         const corsHandler = cors({
             origin: process.env.WEBSITE_URL,
-            exposedHeaders: ["Sara-Issue"],
+            exposedHeaders: ["Sara-Issue", "Sara-Code"],
         });
         app.use(corsHandler);
     }
