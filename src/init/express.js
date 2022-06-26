@@ -25,14 +25,7 @@ module.exports = (ctx) => {
     }
     if (process.env.HTTP_CORS === "yes") {
         // Check header "Origin"
-        app.use((req, res, next) => {
-            const originUrl = req.header('Origin');
-            if (originUrl !== process.env.WEBSITE_URL) {
-                res.sendStatus(StatusCodes.FORBIDDEN);
-                return;
-            }
-            next();
-        })
+        app.use(require("../middlewares/cors_origin"));
         // Do CORS handler
         const cors = require("cors");
         const corsHandler = cors({
