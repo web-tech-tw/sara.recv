@@ -1,9 +1,6 @@
 "use strict";
 // express.js is a web framework.
 
-// Import StatusCodes
-const { StatusCodes } = require("http-status-codes");
-
 // Import express.js
 const express = require("express");
 
