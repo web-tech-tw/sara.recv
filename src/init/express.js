@@ -1,6 +1,9 @@
 "use strict";
 // express.js is a web framework.
 
+// Import StatusCodes
+const { StatusCodes } = require("http-status-codes");
+
 // Import express.js
 const express = require("express");
 
@@ -21,6 +24,16 @@ module.exports = (ctx) => {
         app.use(require("../middlewares/https_redirect"));
     }
     if (process.env.HTTP_CORS === "yes") {
+        // Check header "Origin"
+        app.use((req, res, next) => {
+            const originUrl = req.header('Origin');
+            if (originUrl !== process.env.WEBSITE_URL) {
+                res.sendStatus(StatusCodes.FORBIDDEN);
+                return;
+            }
+            next();
+        })
+        // Do CORS handler
         const cors = require("cors");
         const corsHandler = cors({
             origin: process.env.WEBSITE_URL,
