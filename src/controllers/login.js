@@ -4,7 +4,9 @@ const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
 // Import modules
+const constant = require("../init/const");
 const util = {
+    bfap: require("../utils/bfap"),
     mail_sender: require("../utils/mail_sender"),
     sara_token: require("../utils/sara_token"),
     ip_address: require("../utils/ip_address"),
@@ -25,6 +27,14 @@ module.exports = (ctx, r) => {
         middleware.validator.body("email").isEmail().notEmpty(),
         middleware.inspector,
         async (req, res) => {
+            if (util.bfap.inspect(
+                ctx,
+                constant.BFAP_CONFIG_IP_LOGIN,
+                util.ip_address(req),
+            )) {
+                res.sendStatus(StatusCodes.FORBIDDEN);
+                return;
+            }
             const User = ctx.database.model("User", schema.user);
             if (!(await User.findOne({email: req.body.email}).exec())) {
                 res.sendStatus(StatusCodes.NOT_FOUND);

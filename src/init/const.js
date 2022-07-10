@@ -5,5 +5,14 @@
 module.exports = {
     APP_NAME: "sara.recv",
     SECRET_FILENAME: "secret.key",
-    USER_INPUT_MAX_RETRY: 20,
+    BFAP_CONFIG_CODE_TOKEN: {
+        type: "code_token",
+        maxRetry: 10,
+        ttl: 86_400,
+    },
+    BFAP_CONFIG_IP_LOGIN: {
+        type: "ip_login",
+        maxRetry: 10,
+        ttl: 3_600,
+    },
 };

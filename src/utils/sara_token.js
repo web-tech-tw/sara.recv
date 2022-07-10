@@ -13,6 +13,9 @@ const {v4: uuidV4} = require("uuid");
 // Import SHA256 generator
 const {sha256} = require("js-sha256");
 
+// Import inspect of BFAP
+const {inspect: bfapInspact} = require("../utils/bfap");
+
 // Import constant
 const constant = require("../init/const");
 
@@ -138,7 +141,11 @@ function validateAuthToken(ctx, token) {
  * @return {boolean|object}
  */
 function validateCodeToken(ctx, code, token) {
-    if (isBruteForce(ctx, token)) {
+    if (bfapInspact(
+        ctx,
+        constant.BFAP_CONFIG_CODE_TOKEN,
+        token,
+    )) {
         console.error("brute_force");
         return false;
     }
@@ -161,28 +168,6 @@ function validateCodeToken(ctx, code, token) {
 }
 
 /**
- * Brute-force attack protection.
- * @param {object} ctx - The context variable from app.js.
- * @param {string} token - The token.
- * @return {boolean}
- */
-function isBruteForce(ctx, token) {
-    const hash = sha256(token);
-    const keyName = `force:${hash}`;
-    const status = ctx.cache.get(keyName);
-    if (
-        status &&
-        status > constant.USER_INPUT_MAX_RETRY
-    ) {
-        return true;
-    } else {
-        const value = status ? parseInt(status) : 0;
-        ctx.cache.set(keyName, value + 1, 86_400);
-        return false;
-    }
-}
-
-/**
  * Replay attack protection.
  * @param {object} ctx - The context variable from app.js.
  * @param {object} tokenData - The data decoded from token.
@@ -190,7 +175,7 @@ function isBruteForce(ctx, token) {
  */
 function isGone(ctx, tokenData) {
     const {jti, exp} = tokenData;
-    const keyName = `gone:${jti}`;
+    const keyName = `token_gone:${jti}`;
     if (ctx.cache.has(keyName)) return true;
     const ttl = exp - ctx.now();
     ctx.cache.set(keyName, true, ttl);
