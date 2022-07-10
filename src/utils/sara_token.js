@@ -13,6 +13,9 @@ const {v4: uuidV4} = require("uuid");
 // Import SHA256 generator
 const {sha256} = require("js-sha256");
 
+// Import constant
+const constant = require("../init/const");
+
 // Define generalIssueOptions generator
 const generalIssueOptions = (metadata) => ({
     algorithm: "HS256",
@@ -120,6 +123,10 @@ function validateAuthToken(ctx, token) {
             console.error("invalid_sara_code_token");
             return false;
         }
+        if (isBruteForce(ctx, data.payload)) {
+            console.error("brute_force");
+            return false;
+        }
         return data.payload;
     } catch (e) {
         console.error(e);
@@ -154,15 +161,40 @@ function validateCodeToken(ctx, code, token) {
 }
 
 /**
+ * Brute-force attack protection.
+ * @param {object} ctx - The context variable from app.js.
+ * @param {object} tokenData - The data decoded from token.
+ * @return {boolean}
+ */
+function isBruteForce(ctx, tokenData) {
+    const {jti} = tokenData;
+    const keyName = `force:${jti}`;
+    const status = ctx.cache.get(keyName);
+    if (
+        status &&
+        status > constant.USER_INPUT_MAX_RETRY
+    ) {
+        return true;
+    } else {
+        const ttl = tokenData.exp - ctx.now();
+        const value = status ? parseInt(status) : 0;
+        ctx.cache.set(keyName, value + 1, ttl);
+        return false;
+    }
+}
+
+/**
  * Replay attack protection.
  * @param {object} ctx - The context variable from app.js.
  * @param {object} tokenData - The data decoded from token.
  * @return {boolean}
  */
 function isGone(ctx, tokenData) {
-    const keyName = `Token:${tokenData.jti}`;
+    const {jti} = tokenData;
+    const keyName = `gone:${jti}`;
     if (ctx.cache.has(keyName)) return true;
-    ctx.cache.set(keyName, tokenData.iat, tokenData.exp - ctx.now());
+    const ttl = tokenData.exp - ctx.now();
+    ctx.cache.set(keyName, true, ttl);
     return false;
 }
 
