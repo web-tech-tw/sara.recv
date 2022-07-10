@@ -138,6 +138,10 @@ function validateAuthToken(ctx, token) {
  * @return {boolean|object}
  */
 function validateCodeToken(ctx, code, token) {
+    if (isBruteForce(ctx, token)) {
+        console.error("brute_force");
+        return false;
+    }
     try {
         const jwtSecret = `${ctx.jwt_secret}_${code}`;
         const validateOptions = generalValidateOptions({ctx});
@@ -147,10 +151,6 @@ function validateCodeToken(ctx, code, token) {
             data?.header?.sara?.type !== "code"
         ) {
             console.error("invalid_sara_code_token");
-            return false;
-        }
-        if (isBruteForce(ctx, data.payload)) {
-            console.error("brute_force");
             return false;
         }
         return data.payload;
@@ -163,12 +163,12 @@ function validateCodeToken(ctx, code, token) {
 /**
  * Brute-force attack protection.
  * @param {object} ctx - The context variable from app.js.
- * @param {object} tokenData - The data decoded from token.
+ * @param {string} token - The token.
  * @return {boolean}
  */
-function isBruteForce(ctx, tokenData) {
-    const {jti} = tokenData;
-    const keyName = `force:${jti}`;
+function isBruteForce(ctx, token) {
+    const hash = sha256(token);
+    const keyName = `force:${hash}`;
     const status = ctx.cache.get(keyName);
     if (
         status &&
@@ -176,9 +176,8 @@ function isBruteForce(ctx, tokenData) {
     ) {
         return true;
     } else {
-        const ttl = tokenData.exp - ctx.now();
         const value = status ? parseInt(status) : 0;
-        ctx.cache.set(keyName, value + 1, ttl);
+        ctx.cache.set(keyName, value + 1, 86_400);
         return false;
     }
 }
@@ -190,10 +189,10 @@ function isBruteForce(ctx, tokenData) {
  * @return {boolean}
  */
 function isGone(ctx, tokenData) {
-    const {jti} = tokenData;
+    const {jti, exp} = tokenData;
     const keyName = `gone:${jti}`;
     if (ctx.cache.has(keyName)) return true;
-    const ttl = tokenData.exp - ctx.now();
+    const ttl = exp - ctx.now();
     ctx.cache.set(keyName, true, ttl);
     return false;
 }
