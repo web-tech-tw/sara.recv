@@ -123,10 +123,6 @@ function validateAuthToken(ctx, token) {
             console.error("invalid_sara_code_token");
             return false;
         }
-        if (isBruteForce(ctx, data.payload)) {
-            console.error("brute_force");
-            return false;
-        }
         return data.payload;
     } catch (e) {
         console.error(e);
@@ -151,6 +147,10 @@ function validateCodeToken(ctx, code, token) {
             data?.header?.sara?.type !== "code"
         ) {
             console.error("invalid_sara_code_token");
+            return false;
+        }
+        if (isBruteForce(ctx, data.payload)) {
+            console.error("brute_force");
             return false;
         }
         return data.payload;
