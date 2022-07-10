@@ -33,6 +33,7 @@ module.exports = (ctx, r) => {
                 util.ip_address(req),
             )) {
                 res.sendStatus(StatusCodes.FORBIDDEN);
+                console.error("brute_force");
                 return;
             }
             const User = ctx.database.model("User", schema.user);
