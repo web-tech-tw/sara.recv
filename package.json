@@ -14,7 +14,8 @@
     "lint": "eslint \"app.js\" \"new_secret.js\" \"src/**/*.js\"",
     "lint:fix": "eslint \"app.js\" \"new_secret.js\" \"src/**/*.js\" --fix",
     "test": "mocha test --exit --recursive --timeout 5000",
-    "cover": "nyc mocha test --recursive --timeout 5000 --exit"
+    "cover": "nyc mocha test --recursive --timeout 5000 --exit",
+    "prepare": "husky install"
   },
   "dependencies": {
     "cors": "^2.8.5",
