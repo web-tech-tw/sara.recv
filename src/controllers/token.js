@@ -8,7 +8,7 @@ const util = {
     sara_token: require("../utils/sara_token"),
 };
 const middleware = {
-    inspector: require("../middlewares/inspector"),
+    inspector: require("../middleware/inspector"),
     validator: require("express-validator"),
 };
 
