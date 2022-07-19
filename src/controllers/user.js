@@ -22,34 +22,22 @@ module.exports = (ctx, r) => {
 
     router.get("/",
         middleware.access("admin"),
-        middleware.validator.query("user_id").isString().notEmpty(),
+        middleware.validator.query("user_id").isMongoId().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const User = ctx.database.model("User", schema.user);
-            try {
-                res.send(await User.findById(req.query.user_id).exec());
-            } catch (e) {
-                if (e.kind !== "ObjectId") console.error(e);
-                res.sendStatus(StatusCodes.BAD_REQUEST);
-            }
+            res.send(await User.findById(req.query.user_id).exec());
         },
     );
 
     router.post("/role",
         middleware.access("admin"),
-        middleware.validator.body("user_id").isString().notEmpty(),
+        middleware.validator.body("user_id").isMongoId().notEmpty(),
         middleware.validator.body("role").isString().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const User = ctx.database.model("User", schema.user);
-            let user;
-            try {
-                user = await User.findById(req.body.user_id).exec();
-            } catch (e) {
-                if (e.kind !== "ObjectId") console.error(e);
-                res.sendStatus(StatusCodes.BAD_REQUEST);
-                return;
-            }
+            const user = await User.findById(req.body.user_id).exec();
             if (!user) {
                 res.sendStatus(StatusCodes.NOT_FOUND);
                 return;
@@ -69,19 +57,12 @@ module.exports = (ctx, r) => {
 
     router.delete("/role",
         middleware.access("admin"),
-        middleware.validator.body("user_id").isString().notEmpty(),
+        middleware.validator.body("user_id").isMongoId().notEmpty(),
         middleware.validator.body("role").isString().notEmpty(),
         middleware.inspector,
         async (req, res) => {
             const User = ctx.database.model("User", schema.user);
-            let user;
-            try {
-                user = await User.findById(req.body.user_id).exec();
-            } catch (e) {
-                if (e.kind !== "ObjectId") console.error(e);
-                res.sendStatus(StatusCodes.BAD_REQUEST);
-                return;
-            }
+            const user = await User.findById(req.body.user_id).exec();
             if (!user) {
                 res.sendStatus(StatusCodes.NOT_FOUND);
                 return;
