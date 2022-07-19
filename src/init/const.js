@@ -15,4 +15,9 @@ module.exports = {
         maxRetry: 10,
         ttl: 3_600,
     },
+    BFAP_CONFIG_IP_REGISTER: {
+        type: "ip_register",
+        maxRetry: 20,
+        ttl: 3_600,
+    },
 };

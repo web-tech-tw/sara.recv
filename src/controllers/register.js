@@ -4,7 +4,9 @@ const {StatusCodes} = require("http-status-codes");
 const {Router: expressRouter} = require("express");
 
 // Import modules
+const constant = require("../init/const");
 const util = {
+    bfap: require("../utils/bfap"),
     mail_sender: require("../utils/mail_sender"),
     sara_token: require("../utils/sara_token"),
     ip_address: require("../utils/ip_address"),
@@ -61,6 +63,16 @@ module.exports = (ctx, r) => {
         middleware.validator.body("code").isLength({min: 7, max: 7}).notEmpty(),
         middleware.validator.body("register_token").isString().notEmpty(),
         middleware.inspector,
+        (req, res, next) => {
+            if (!util.bfap.inspect(
+                ctx,
+                constant.BFAP_CONFIG_IP_LOGIN,
+                util.ip_address(req),
+            )) return next();
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            console.error("brute_force");
+            return;
+        },
         async (req, res) => {
             const tokenData = util.sara_token.validateCodeToken(
                 ctx, req.body.code, req.body.register_token,

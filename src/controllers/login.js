@@ -27,15 +27,6 @@ module.exports = (ctx, r) => {
         middleware.validator.body("email").isEmail().notEmpty(),
         middleware.inspector,
         async (req, res) => {
-            if (util.bfap.inspect(
-                ctx,
-                constant.BFAP_CONFIG_IP_LOGIN,
-                util.ip_address(req),
-            )) {
-                res.sendStatus(StatusCodes.FORBIDDEN);
-                console.error("brute_force");
-                return;
-            }
             const User = ctx.database.model("User", schema.user);
             if (!(await User.findOne({email: req.body.email}).exec())) {
                 res.sendStatus(StatusCodes.NOT_FOUND);
@@ -65,6 +56,16 @@ module.exports = (ctx, r) => {
         middleware.validator.body("code").isLength({min: 6, max: 6}).notEmpty(),
         middleware.validator.body("next_token").isString().notEmpty(),
         middleware.inspector,
+        (req, res, next) => {
+            if (!util.bfap.inspect(
+                ctx,
+                constant.BFAP_CONFIG_IP_LOGIN,
+                util.ip_address(req),
+            )) return next();
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            console.error("brute_force");
+            return;
+        },
         async (req, res) => {
             const tokenData = util.sara_token.validateCodeToken(
                 ctx, req.body.code, req.body.next_token,
