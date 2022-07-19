@@ -11,8 +11,8 @@ const schema = {
     user: require("../schemas/user"),
 };
 const middleware = {
-    access: require("../middlewares/access"),
-    inspector: require("../middlewares/inspector"),
+    access: require("../middleware/access"),
+    inspector: require("../middleware/inspector"),
     validator: require("express-validator"),
 };
 
