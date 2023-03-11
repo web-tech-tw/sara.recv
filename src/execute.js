@@ -1,20 +1,24 @@
 "use strict";
 
+// Import config
+const {getMust, getSplited} = require("./config");
+
 // Import modules
-const fs = require("fs");
-const http = require("http");
-const https = require("https");
+const fs = require("node:fs");
+const http = require("node:http");
+const https = require("node:https");
 
 /**
  * Setup http protocol (general)
  * @param {object} app
  * @param {function} callback
  */
-function general(app, callback) {
-    const httpServer = http.createServer(app);
-    const port = parseInt(process.env.HTTP_PORT);
-    httpServer.listen(port, process.env.HTTP_HOSTNAME);
-    callback({type: "general", hostname: process.env.HTTP_HOSTNAME, port});
+function setupHttpProtocol(app, callback) {
+    const options = {};
+    const httpServer = http.createServer(options, app);
+    const port = parseInt(getMust("HTTP_PORT"));
+    httpServer.listen(port, getMust("HTTP_HOSTNAME"));
+    callback({type: "general", hostname: getMust("HTTP_HOSTNAME"), port});
 }
 
 /**
@@ -22,25 +26,28 @@ function general(app, callback) {
  * @param {object} app
  * @param {function} callback
  */
-function secure(app, callback) {
-    const credentials = {
-        key: fs.readFileSync(process.env.HTTPS_KEY_PATH),
-        cert: fs.readFileSync(process.env.HTTPS_CERT_PATH),
+function setupHttpsProtocol(app, callback) {
+    const options = {
+        key: fs.readFileSync(getMust("HTTPS_KEY_PATH")),
+        cert: fs.readFileSync(getMust("HTTPS_CERT_PATH")),
     };
-    const httpsServer = https.createServer(credentials, app);
-    const port = parseInt(process.env.HTTPS_PORT);
-    httpsServer.listen(port, process.env.HTTP_HOSTNAME);
-    callback({type: "secure", hostname: process.env.HTTP_HOSTNAME, port});
+    const httpsServer = https.createServer(options, app);
+    const port = parseInt(getMust("HTTPS_PORT"));
+    httpsServer.listen(port, getMust("HTTPS_HOSTNAME"));
+    callback({type: "secure", hostname: getMust("HTTPS_HOSTNAME"), port});
 }
 
 // Detect protocols automatically
 module.exports = function(app, callback) {
-    if (process.env.HTTPS === "both") {
-        general(app, callback);
-        secure(app, callback);
-    } else if (process.env.HTTPS === "only") {
-        secure(app, callback);
-    } else {
-        general(app, callback);
+    const enabledProtocols = getSplited("ENABLED_PROTOCOLS");
+
+    // http
+    if (enabledProtocols.includes("http")) {
+        setupHttpProtocol(app, callback);
+    }
+
+    // https
+    if (enabledProtocols.includes("https")) {
+        setupHttpsProtocol(app, callback);
     }
 };

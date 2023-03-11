@@ -7,16 +7,18 @@
 // Import StatusCodes
 const {StatusCodes} = require("http-status-codes");
 
+const {isObjectPropExists} = require("../utils/native");
+
 // Import authMethods
 const authMethods = {
-    "TEST": async (ctx, req, _) =>
-        require("../utils/test_token").validateAuthToken(ctx, req.auth.secret),
-    "SARA": async (ctx, req, _) =>
-        require("../utils/sara_token").validateAuthToken(ctx, req.auth.secret),
+    "TEST": async (req, _) =>
+        require("../utils/test_token").validateAuthToken(req.auth.secret),
+    "SARA": async (req, _) =>
+        require("../utils/sara_token").validateAuthToken(req.auth.secret),
 };
 
 // Export (function)
-module.exports = (ctx) => function(req, res, next) {
+module.exports = (req, res, next) => {
     const authCode = req.header("Authorization");
     if (!authCode) {
         next();
@@ -33,11 +35,11 @@ module.exports = (ctx) => function(req, res, next) {
         method: params[0],
         secret: params[1],
     };
-    if (!(req.auth.method in authMethods)) {
+    if (!isObjectPropExists(authMethods, req.auth.method)) {
         next();
         return;
     }
-    authMethods[req.auth.method](ctx, req, res)
+    authMethods[req.auth.method](req, res)
         .then((result) => {
             if (res.aborted) {
                 return;

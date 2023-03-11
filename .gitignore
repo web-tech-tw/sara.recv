@@ -6,8 +6,6 @@ secret.key
 .DS_Store
 
 # Directories
-.nyc_output
-coverage
 node_modules
 ssl_keys
 dist

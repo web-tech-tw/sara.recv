@@ -1,17 +1,11 @@
-# sara.recv
+# template.recv
 
-無密碼式身分認證系統
+後端 API 通用模板
 
 ## Development
 
 ```shell
 npm run dev
-```
-
-## Testing
-
-```shell
-npm run test
 ```
 
 ## Production
