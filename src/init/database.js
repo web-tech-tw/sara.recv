@@ -1,11 +1,17 @@
 "use strict";
 // mongoose is an ODM library for MongoDB.
 
+// Import config
+const {getMust} = require("../config");
+
 // Import mongoose
 const database = require("mongoose");
 
-// Connect to MongoDB
-database.connect(process.env.MONGODB_URI);
+// Configure mongose
+database.set("strictQuery", true);
 
-// Export database (instance)
-module.exports = database;
+// Connect to MongoDB
+database.connect(getMust("MONGODB_URI"));
+
+// Export as useFunction
+exports.useDatabase = () => database;

@@ -6,8 +6,6 @@ secret.key
 .DS_Store
 
 # Directories
-.nyc_output
-coverage
 node_modules
 ssl_keys
 dist
@@ -19,6 +17,8 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Editor directories and files
+coverage
+.nyc_output
 .idea
 .vscode
 *.suo

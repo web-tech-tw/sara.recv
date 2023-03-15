@@ -1,5 +1,6 @@
 "use strict";
 
+// Routes
 const routes = [
     require("./login"),
     require("./profile"),
@@ -8,6 +9,7 @@ const routes = [
     require("./user"),
 ];
 
-module.exports = (ctx, app) => {
-    routes.forEach((c) => c(ctx, app));
+// Load routes
+module.exports = () => {
+    routes.forEach((c) => c());
 };

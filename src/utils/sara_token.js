@@ -19,28 +19,40 @@ const {inspect: bfapInspact} = require("../utils/bfap");
 // Import constant
 const constant = require("../init/const");
 
+const {getMust} = require("../config");
+
+const {useJwtSecret} = require("../init/jwt_secret");
+const {useCache} = require("../init/cache");
+
+const jwtSecret = useJwtSecret();
+const cache = useCache();
+
+const {
+    getPosixTimestamp,
+} = require("../utils/native");
+
 // Define generalIssueOptions generator
-const generalIssueOptions = (metadata) => ({
+const generalIssueOptions = ({type}) => ({
     algorithm: "HS256",
     expiresIn: "1d",
     notBefore: "500ms",
-    audience: process.env.WEBSITE_URL,
-    issuer: sha256(metadata.ctx.jwt_secret),
+    audience: getMust("SARA_AUDIENCE_URL"),
+    issuer: sha256(jwtSecret),
     noTimestamp: false,
     mutatePayload: false,
     header: {
         sara: {
             version: 1,
-            type: metadata.type,
+            type: type,
             point: {
                 client: {
-                    login: process.env.SARA_CLIENT_LOGIN_URL,
-                    register: process.env.SARA_CLIENT_REGISTER_URL,
+                    login: getMust("SARA_CLIENT_LOGIN_URL"),
+                    register: getMust("SARA_CLIENT_REGISTER_URL"),
                 },
                 api: {
                     token: {
-                        verify: process.env.SARA_API_TOKEN_VERIFY_URL,
-                        decode: process.env.SARA_API_TOKEN_DECODE_URL,
+                        verify: getMust("SARA_API_TOKEN_VERIFY_URL"),
+                        decode: getMust("SARA_API_TOKEN_DECODE_URL"),
                     },
                 },
             },
@@ -49,21 +61,20 @@ const generalIssueOptions = (metadata) => ({
 });
 
 // Define generalValidateOptions generator
-const generalValidateOptions = (metadata) => ({
+const generalValidateOptions = () => ({
     algorithms: ["HS256"],
-    audience: process.env.WEBSITE_URL,
-    issuer: sha256(metadata.ctx.jwt_secret),
+    audience: getMust("SARA_AUDIENCE_URL"),
+    issuer: sha256(jwtSecret),
     complete: true,
 });
 
 /**
  * Issue function (Auth)
- * @param {object} ctx - The context variable from app.js.
  * @param {object} user - The user data to issue.
  * @return {object|null}
  */
-function issueAuthToken(ctx, user) {
-    const issueOptions = generalIssueOptions({ctx, type: "auth"});
+function issueAuthToken(user) {
+    const issueOptions = generalIssueOptions({type: "auth"});
     const jti = uuidV4(null, null, null);
     const secret = crypto.randomInt(2048, 1000000).toString();
     const payload = {
@@ -74,7 +85,7 @@ function issueAuthToken(ctx, user) {
     };
     const token = jwt.sign(
         payload,
-        ctx.jwt_secret,
+        jwtSecret,
         issueOptions,
         null,
     );
@@ -83,18 +94,17 @@ function issueAuthToken(ctx, user) {
 
 /**
  * Issue function (Code)
- * @param {object} ctx - The context variable from app.js.
  * @param {number} codeLength - Length of code to issue.
  * @param {object} data - The metadata to pass
  * @return {object|null}
  */
-function issueCodeToken(ctx, codeLength, data) {
+function issueCodeToken(codeLength, data) {
     const code = crypto.randomInt(
         10 ** (codeLength - 1),
         (10 ** codeLength) - 1,
     ).toString();
-    const jwtSecret = `${ctx.jwt_secret}_${code}`;
-    const issueOptions = generalIssueOptions({ctx, type: "code"});
+    const codeSecret = `${jwtSecret}_${code}`;
+    const issueOptions = generalIssueOptions({type: "code"});
     const payload = {
         data,
         sub: data._id || data.email,
@@ -102,7 +112,7 @@ function issueCodeToken(ctx, codeLength, data) {
     };
     const token = jwt.sign(
         payload,
-        jwtSecret,
+        codeSecret,
         issueOptions,
         null,
     );
@@ -111,14 +121,13 @@ function issueCodeToken(ctx, codeLength, data) {
 
 /**
  * Validate function (Auth)
- * @param {object} ctx - The context variable from app.js.
  * @param {string} token - The token to valid.
  * @return {boolean|object}
  */
-function validateAuthToken(ctx, token) {
+function validateAuthToken(token) {
     try {
-        const validateOptions = generalValidateOptions({ctx});
-        const data = jwt.verify(token, ctx.jwt_secret, validateOptions, null);
+        const validateOptions = generalValidateOptions();
+        const data = jwt.verify(token, jwtSecret, validateOptions, null);
         if (
             data?.header?.sara?.version !== 1 ||
             data?.header?.sara?.type !== "auth"
@@ -135,14 +144,12 @@ function validateAuthToken(ctx, token) {
 
 /**
  * Validate function (Code)
- * @param {object} ctx - The context variable from app.js.
  * @param {string} code - The code to valid.
  * @param {string} token - The token to valid.
  * @return {boolean|object}
  */
-function validateCodeToken(ctx, code, token) {
+function validateCodeToken(code, token) {
     if (bfapInspact(
-        ctx,
         constant.BFAP_CONFIG_CODE_TOKEN,
         token,
     )) {
@@ -150,9 +157,9 @@ function validateCodeToken(ctx, code, token) {
         return false;
     }
     try {
-        const jwtSecret = `${ctx.jwt_secret}_${code}`;
-        const validateOptions = generalValidateOptions({ctx});
-        const data = jwt.verify(token, jwtSecret, validateOptions, null);
+        const codeSecret = `${jwtSecret}_${code}`;
+        const validateOptions = generalValidateOptions();
+        const data = jwt.verify(token, codeSecret, validateOptions, null);
         if (
             data?.header?.sara?.version !== 1 ||
             data?.header?.sara?.type !== "code"
@@ -169,16 +176,15 @@ function validateCodeToken(ctx, code, token) {
 
 /**
  * Replay attack protection.
- * @param {object} ctx - The context variable from app.js.
  * @param {object} tokenData - The data decoded from token.
  * @return {boolean}
  */
-function isGone(ctx, tokenData) {
+function isGone(tokenData) {
     const {jti, exp} = tokenData;
     const keyName = `token_gone:${jti}`;
-    if (ctx.cache.has(keyName)) return true;
-    const ttl = exp - ctx.now();
-    ctx.cache.set(keyName, true, ttl);
+    if (cache.has(keyName)) return true;
+    const ttl = exp - getPosixTimestamp();
+    cache.set(keyName, true, ttl);
     return false;
 }
 

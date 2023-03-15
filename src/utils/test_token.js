@@ -1,6 +1,9 @@
 "use strict";
 // Token utils for testing/debugging or developing.
 
+// Import config
+const {isProduction} = require("../config");
+
 const DEFAULT_FAKE_USER = {
     id: "fake_user",
     nickname: "OpenChat Fake User",
@@ -10,14 +13,16 @@ const DEFAULT_FAKE_USER = {
 
 /**
  * Issue function (Auth)
- * @param {object} ctx - The context variable from app.js.
+ * @module test_token
+ * @function
  * @param {string} [user] - The user to generate the token for.
  * @return {string}
  */
-function issueAuthToken(ctx, user) {
-    if (!ctx.testing && process.env.NODE_ENV === "production") {
-        throw new Error("issueAuthToken is not allowed in production");
+function issueAuthToken(user) {
+    if (isProduction()) {
+        throw new Error("test_token is not allowed in production");
     }
+
     user = user || DEFAULT_FAKE_USER;
     return Buffer
         .from(JSON.stringify(user), "utf-8")
@@ -26,16 +31,14 @@ function issueAuthToken(ctx, user) {
 
 /**
  * Validate function (Auth)
- * @param {object} ctx - The context variable from app.js.
+ * @module test_token
+ * @function
  * @param {string} token - The token to valid.
  * @return {boolean|object}
  */
-function validateAuthToken(ctx, token) {
-    if (
-        !ctx.testing &&
-        process.env.NODE_ENV !== "production"
-    ) {
-        return false;
+function validateAuthToken(token) {
+    if (isProduction()) {
+        throw new Error("test_token is not allowed in production");
     }
 
     return {

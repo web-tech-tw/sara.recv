@@ -1,11 +1,13 @@
 "use strict";
 
+const {isProduction} = require("../config");
+
 /**
  * Print message with testing notification.
  * @param {any} messages
  */
 function log(...messages) {
-    if (process.env.NODE_ENV !== "development") return;
+    if (isProduction()) return;
     console.info("[!] Test mode:", ...messages);
 }
 
