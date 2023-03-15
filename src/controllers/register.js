@@ -5,7 +5,7 @@ const {useApp, express} = require("../init/express");
 
 const {useDatabase} = require("../init/database");
 
-const {isProduction} = require("../config");
+const {getMust, isProduction} = require("../config");
 
 // Import modules
 const constant = require("../init/const");
@@ -26,17 +26,19 @@ const {getPosixTimestamp} = require("../utils/native");
 const {Router: newRouter} = express;
 const router = newRouter();
 
+router.use(express.urlencoded({extended: true}));
+
 const database = useDatabase();
 
 router.post("/",
-    middlewareValidator.body("nickname").isString().notEmpty(),
-    middlewareValidator.body("email").isEmail().notEmpty(),
+    middlewareValidator.body("nickname").notEmpty(),
+    middlewareValidator.body("email").isEmail(),
     middlewareInspector,
     (req, res, next) => {
         if (!utilBFAP.inspect(
             constant.BFAP_CONFIG_IP_REGISTER,
             utilVisitor.getIPAddress(req),
-        )) next();
+        )) return next();
         res.sendStatus(StatusCodes.FORBIDDEN);
         console.error("brute_force");
         return;
@@ -53,7 +55,7 @@ router.post("/",
         );
         const data = {
             to: req.body.email,
-            website: process.env.WEBSITE_URL,
+            website: getMust("SARA_AUDIENCE_URL"),
             ip_address: utilVisitor.getIPAddress(req),
             code,
         };
@@ -72,9 +74,9 @@ router.post("/",
 );
 
 router.post("/verify",
-    middlewareValidator.body("code").isNumeric().notEmpty(),
-    middlewareValidator.body("code").isLength({min: 7, max: 7}).notEmpty(),
-    middlewareValidator.body("register_token").isString().notEmpty(),
+    middlewareValidator.body("code").isNumeric(),
+    middlewareValidator.body("code").isLength({min: 7, max: 7}),
+    middlewareValidator.body("register_token").notEmpty(),
     middlewareInspector,
     async (req, res) => {
         const tokenData = utilSaraToken.validateCodeToken(

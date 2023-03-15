@@ -1,5 +1,7 @@
 "use strict";
 
+const {getMust} = require("../config");
+
 const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
 
@@ -67,7 +69,7 @@ router.put("/email",
         );
         const data = {
             to: req.body.email,
-            website: process.env.WEBSITE_URL,
+            website: getMust("SARA_AUDIENCE_URL"),
             ip_address: utilVisitor.getIPAddress(req),
             code,
         };

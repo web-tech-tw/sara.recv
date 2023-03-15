@@ -19,6 +19,8 @@ const {inspect: bfapInspact} = require("../utils/bfap");
 // Import constant
 const constant = require("../init/const");
 
+const {getMust} = require("../config");
+
 const {useJwtSecret} = require("../init/jwt_secret");
 const {useCache} = require("../init/cache");
 
@@ -34,7 +36,7 @@ const generalIssueOptions = ({type}) => ({
     algorithm: "HS256",
     expiresIn: "1d",
     notBefore: "500ms",
-    audience: process.env.WEBSITE_URL,
+    audience: getMust("SARA_AUDIENCE_URL"),
     issuer: sha256(jwtSecret),
     noTimestamp: false,
     mutatePayload: false,
@@ -44,13 +46,13 @@ const generalIssueOptions = ({type}) => ({
             type: type,
             point: {
                 client: {
-                    login: process.env.SARA_CLIENT_LOGIN_URL,
-                    register: process.env.SARA_CLIENT_REGISTER_URL,
+                    login: getMust("SARA_CLIENT_LOGIN_URL"),
+                    register: getMust("SARA_CLIENT_REGISTER_URL"),
                 },
                 api: {
                     token: {
-                        verify: process.env.SARA_API_TOKEN_VERIFY_URL,
-                        decode: process.env.SARA_API_TOKEN_DECODE_URL,
+                        verify: getMust("SARA_API_TOKEN_VERIFY_URL"),
+                        decode: getMust("SARA_API_TOKEN_DECODE_URL"),
                     },
                 },
             },
@@ -61,7 +63,7 @@ const generalIssueOptions = ({type}) => ({
 // Define generalValidateOptions generator
 const generalValidateOptions = () => ({
     algorithms: ["HS256"],
-    audience: process.env.WEBSITE_URL,
+    audience: getMust("SARA_AUDIENCE_URL"),
     issuer: sha256(jwtSecret),
     complete: true,
 });
@@ -101,7 +103,7 @@ function issueCodeToken(codeLength, data) {
         10 ** (codeLength - 1),
         (10 ** codeLength) - 1,
     ).toString();
-    const jwtSecret = `${jwtSecret}_${code}`;
+    const codeSecret = `${jwtSecret}_${code}`;
     const issueOptions = generalIssueOptions({type: "code"});
     const payload = {
         data,
@@ -110,7 +112,7 @@ function issueCodeToken(codeLength, data) {
     };
     const token = jwt.sign(
         payload,
-        jwtSecret,
+        codeSecret,
         issueOptions,
         null,
     );
@@ -155,9 +157,9 @@ function validateCodeToken(code, token) {
         return false;
     }
     try {
-        const jwtSecret = `${jwtSecret}_${code}`;
+        const codeSecret = `${jwtSecret}_${code}`;
         const validateOptions = generalValidateOptions();
-        const data = jwt.verify(token, jwtSecret, validateOptions, null);
+        const data = jwt.verify(token, codeSecret, validateOptions, null);
         if (
             data?.header?.sara?.version !== 1 ||
             data?.header?.sara?.type !== "code"

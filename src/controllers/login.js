@@ -1,6 +1,6 @@
 "use strict";
 
-const {isProduction} = require("../config");
+const {isProduction, getMust} = require("../config");
 
 const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
@@ -24,10 +24,12 @@ const middlewareValidator = require("express-validator");
 const {Router: newRouter} = express;
 const router = newRouter();
 
+router.use(express.urlencoded({extended: true}));
+
 const database = useDatabase();
 
 router.post("/",
-    middlewareValidator.body("email").isEmail().notEmpty(),
+    middlewareValidator.body("email").isEmail(),
     middlewareInspector,
     (req, res, next) => {
         if (!utilBFAP.inspect(
@@ -48,7 +50,7 @@ router.post("/",
         const {token, code} = utilSaraToken.issueCodeToken(6, metadata);
         const data = {
             to: req.body.email,
-            website: process.env.WEBSITE_URL,
+            website: getMust("SARA_AUDIENCE_URL"),
             ip_address: utilVisitor.getIPAddress(req),
             code,
         };

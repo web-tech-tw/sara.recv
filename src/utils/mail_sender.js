@@ -2,16 +2,16 @@
 // Mail Sender of Sara
 
 const nodemailer = require("nodemailer");
-const {isProduction} = require("../config");
+const {isProduction, getMust, getEnabled} = require("../config");
 const testing = require("./testing");
 
 const transporter = nodemailer.createTransport({
-    host: process.env.MAIL_SMTP_HOST,
-    port: process.env.MAIL_SMTP_PORT,
-    secure: process.env.MAIL_SMTP_SECURE === "yes",
-    auth: process.env.MAIL_SMTP_USERNAME ? {
-        user: process.env.MAIL_SMTP_USERNAME,
-        pass: process.env.MAIL_SMTP_PASSWORD,
+    host: getMust("MAIL_SMTP_HOST"),
+    port: getMust("MAIL_SMTP_PORT"),
+    secure: getEnabled("MAIL_SMTP_SECURE"),
+    auth: getMust("MAIL_SMTP_USERNAME") ? {
+        user: getMust("MAIL_SMTP_USERNAME"),
+        pass: getMust("MAIL_SMTP_PASSWORD"),
     } : null,
 });
 
@@ -25,7 +25,7 @@ module.exports = function(template, data) {
 
     const {subject, text, html} = require(`../templates/mail/${template}.js`);
     return transporter.sendMail({
-        from: process.env.MAIL_SMTP_FROM,
+        from: getMust("MAIL_SMTP_FROM"),
         to: data.to,
         subject: subject(data),
         text: text(data),
