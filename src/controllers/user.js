@@ -20,6 +20,8 @@ const database = useDatabase();
 const {Router: newRouter} = express;
 const router = newRouter();
 
+router.use(express.urlencoded({extended: true}));
+
 router.get("/",
     middlewareAccess("admin"),
     middlewareValidator.query("user_id").isMongoId().notEmpty(),

@@ -13,6 +13,8 @@ const middlewareValidator = require("express-validator");
 const {Router: newRouter} = express;
 const router = newRouter();
 
+router.use(express.urlencoded({extended: true}));
+
 router.post("/verify",
     middlewareValidator.body("token").isString().notEmpty(),
     middlewareInspector,

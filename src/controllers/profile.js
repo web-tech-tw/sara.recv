@@ -23,6 +23,8 @@ const middlewareValidator = require("express-validator");
 const {Router: newRouter} = express;
 const router = newRouter();
 
+router.use(express.urlencoded({extended: true}));
+
 const database = useDatabase();
 
 router.get("/",
