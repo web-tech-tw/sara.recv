@@ -2,7 +2,11 @@
 
 // Routes
 const routes = [
-    require("./example"),
+    require("./login"),
+    require("./profile"),
+    require("./register"),
+    require("./token"),
+    require("./user"),
 ];
 
 // Load routes
