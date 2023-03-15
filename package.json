@@ -9,12 +9,13 @@
     "new-secret": "node new_secret.js",
     "dev": "nodemon app.js",
     "start": "node app.js",
-    "lint": "npm run lint:es",
+    "lint": "npx lint-staged",
     "lint:es": "eslint \"*.js\" \"src/**/*.js\"",
     "lint:es:fix": "eslint \"*.js\" \"src/**/*.js\" --fix",
     "test": "mocha test --exit --recursive --timeout 5000",
     "cover": "nyc mocha test --recursive --timeout 5000 --exit",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "commit": "cz"
   },
   "lint-staged": {
     "*.js": "eslint"
@@ -36,6 +37,7 @@
   "devDependencies": {
     "@commitlint/cli": "^17.4.4",
     "@commitlint/config-conventional": "^17.4.4",
+    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.17.0",
     "eslint-config-google": "^0.14.0",
     "husky": "^8.0.1",
@@ -45,5 +47,10 @@
     "nodemon": "^2.0.13",
     "nyc": "^15.1.0",
     "supertest": "^6.2.3"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
