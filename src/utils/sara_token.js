@@ -33,18 +33,6 @@ const issueOptions = {
         sara: {
             version: 1,
             type: "auth",
-            point: {
-                client: {
-                    login: getMust("SARA_CLIENT_LOGIN_URL"),
-                    register: getMust("SARA_CLIENT_REGISTER_URL"),
-                },
-                api: {
-                    token: {
-                        verify: getMust("SARA_API_TOKEN_VERIFY_URL"),
-                        decode: getMust("SARA_API_TOKEN_DECODE_URL"),
-                    },
-                },
-            },
         },
     },
 };
