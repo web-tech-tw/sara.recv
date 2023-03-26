@@ -16,7 +16,7 @@ const transporter = nodemailer.createTransport({
 });
 
 module.exports = function(template, data) {
-    if (!isProduction) {
+    if (!isProduction()) {
         return new Promise((resolve) => {
             testing.log("\nmail template:", template, "\nmail data:", data);
             resolve();

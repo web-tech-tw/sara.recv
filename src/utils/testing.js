@@ -1,6 +1,17 @@
 "use strict";
 
+const constant = require("../init/const");
+
 const {isProduction} = require("../config");
+
+/**
+ * Check if the address has testing suffix.
+ * @param {string} addr the address
+ * @return {bool}
+ */
+function isTestMailAddress(addr) {
+    return addr.endsWith("@" + constant.TEST_EMAIL_DOMAIN);
+}
 
 /**
  * Print message with testing notification.
@@ -20,4 +31,8 @@ function urlGlue(baseUrl) {
     return (path) => baseUrl + path;
 }
 
-module.exports = {log, urlGlue};
+module.exports = {
+    log,
+    urlGlue,
+    isTestMailAddress,
+};

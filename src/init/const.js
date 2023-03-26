@@ -4,11 +4,8 @@
 exports.APP_NAME = "sara.recv";
 exports.SECRET_FILENAME = "secret.key";
 
-exports.BFAP_CONFIG_CODE_TOKEN = {
-    type: "code_token",
-    maxRetry: 10,
-    ttl: 86_400,
-};
+exports.TEST_EMAIL_DOMAIN = "web-tech.github.io";
+
 exports.BFAP_CONFIG_IP_LOGIN = {
     type: "ip_login",
     maxRetry: 10,

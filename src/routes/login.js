@@ -1,19 +1,16 @@
 "use strict";
 
 const {isProduction, getMust} = require("../config");
-
 const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
 
 const {useDatabase} = require("../init/database");
 
-// Import modules
-const constant = require("../init/const");
-
-const utilBFAP = require("../utils/bfap");
 const utilMailSender = require("../utils/mail_sender");
 const utilSaraToken = require("../utils/sara_token");
+const utilCodeSession = require("../utils/code_session");
 const utilVisitor = require("../utils/visitor");
+const utilTesting = require("../utils/testing");
 
 const schemaUser = require("../schemas/user");
 
@@ -31,67 +28,76 @@ const database = useDatabase();
 router.post("/",
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
-    (req, res, next) => {
-        if (!utilBFAP.inspect(
-            constant.BFAP_CONFIG_IP_LOGIN,
-            utilVisitor.getIPAddress(req),
-        )) return next();
-        res.sendStatus(StatusCodes.FORBIDDEN);
-        console.error("brute_force");
-        return;
-    },
     async (req, res) => {
+        // Check user exists by the email address
         const User = database.model("User", schemaUser);
         if (!(await User.findOne({email: req.body.email}).exec())) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
+
+        // Handle code and metadata
         const metadata = {email: req.body.email};
-        const {token, code} = utilSaraToken.issueCodeToken(6, metadata);
-        const data = {
+        const {code, sessionId} = utilCodeSession.createOne(metadata, 6);
+
+        // Handle mail
+        const mailState = await utilMailSender("login", {
             to: req.body.email,
             website: getMust("SARA_AUDIENCE_URL"),
             ip_address: utilVisitor.getIPAddress(req),
             code,
-        };
-        utilMailSender("login", data).catch(console.error);
-        const result = {next_token: token};
+        });
         if (!isProduction()) {
-            result.code = code;
+            utilTesting.log(mailState);
         }
-        res.send(result);
+
+        // Send response
+        res.
+            status(StatusCodes.CREATED).
+            send({
+                session_type: "login",
+                session_id: sessionId,
+            });
     },
 );
 
 router.post("/verify",
     middlewareValidator.body("code").isNumeric().notEmpty(),
     middlewareValidator.body("code").isLength({min: 6, max: 6}).notEmpty(),
-    middlewareValidator.body("next_token").isString().notEmpty(),
+    middlewareValidator.body("session_id").notEmpty(),
     middlewareInspector,
     async (req, res) => {
-        const tokenData = utilSaraToken.validateCodeToken(
-            req.body.code, req.body.next_token,
-        );
-        if (!tokenData) {
+        // Get metadata back by the code
+        const metadata = utilCodeSession.
+            getOne(req.body.session_id, req.body.code);
+
+        if (metadata === null) {
+            // Check metadata
             res.sendStatus(StatusCodes.UNAUTHORIZED);
             return;
+        } else {
+            // Remove session
+            utilCodeSession.
+                deleteOne(req.body.session_id, req.body.code);
         }
-        if (utilSaraToken.isGone(tokenData)) {
-            res.sendStatus(StatusCodes.GONE);
-            return;
-        }
+
+        // Check user exists by the email address
         const User = database.model("User", schemaUser);
-        const user = await User.findOne({email: tokenData.sub}).exec();
+        const user = await User.findOne({email: metadata.email}).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
-        const metadata = user.toObject();
-        const {token, secret} = utilSaraToken.issueAuthToken(metadata);
-        res
-            .header("Sara-Issue", token)
-            .header("Sara-Code", secret)
-            .sendStatus(StatusCodes.CREATED);
+
+        // Handle authentication
+        const userData = user.toObject();
+        const token = utilSaraToken.
+            issue(userData);
+
+        // Send response
+        res.
+            header("Sara-Issue", token).
+            sendStatus(StatusCodes.CREATED);
     },
 );
 

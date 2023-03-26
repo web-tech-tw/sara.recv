@@ -5,7 +5,6 @@ const {useApp, express} = require("../init/express");
 
 const {useDatabase} = require("../init/database");
 
-// Import modules
 const utilUser = require("../utils/user");
 
 const schemaUser = require("../schemas/user");
@@ -27,8 +26,16 @@ router.get("/",
     middlewareValidator.query("user_id").isMongoId().notEmpty(),
     middlewareInspector,
     async (req, res) => {
+        // Check user exists by the ID
         const User = database.model("User", schemaUser);
-        res.send(await User.findById(req.query.user_id).exec());
+        const user = await User.findById(req.query.user_id).exec();
+
+        // Send response
+        if (!user) {
+            res.send(user);
+        } else {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+        }
     },
 );
 
@@ -38,12 +45,15 @@ router.post("/role",
     middlewareValidator.body("role").isString().notEmpty(),
     middlewareInspector,
     async (req, res) => {
+        // Check user exists by the ID
         const User = database.model("User", schemaUser);
         const user = await User.findById(req.body.user_id).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
+
+        // Update values
         if (!Array.isArray(user?.roles)) {
             user.roles = [req.body.role];
         } else if (user.roles.includes(req.body.role)) {
@@ -53,6 +63,8 @@ router.post("/role",
             user.roles.push(req.body.role);
         }
         await utilUser.saveData(user);
+
+        // Send response
         res.sendStatus(StatusCodes.CREATED);
     },
 );
@@ -63,12 +75,15 @@ router.delete("/role",
     middlewareValidator.body("role").isString().notEmpty(),
     middlewareInspector,
     async (req, res) => {
+        // Check user exists by the ID
         const User = database.model("User", schemaUser);
         const user = await User.findById(req.body.user_id).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
+
+        // Update values
         if (
             Array.isArray(user?.roles) &&
             user.roles.includes(req.body.role)
@@ -80,6 +95,8 @@ router.delete("/role",
             return;
         }
         await utilUser.saveData(user);
+
+        // Send response
         res.sendStatus(StatusCodes.NO_CONTENT);
     },
 );
@@ -90,5 +107,5 @@ module.exports = () => {
     const app = useApp();
 
     // Mount the router
-    app.use("/user", router);
+    app.use("/admin/user", router);
 };

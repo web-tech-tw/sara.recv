@@ -5,8 +5,7 @@ const routes = [
     require("./login"),
     require("./profile"),
     require("./register"),
-    require("./token"),
-    require("./user"),
+    require("./admin"),
 ];
 
 // Load routes

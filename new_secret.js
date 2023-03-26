@@ -1,6 +1,5 @@
 "use strict";
 
-// Import modules
 const fs = require("node:fs");
 const {
     createHash,

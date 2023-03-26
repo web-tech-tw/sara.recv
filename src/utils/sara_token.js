@@ -1,49 +1,38 @@
 "use strict";
 // Token utils of Sara.
 
-// Import crypto
-const crypto = require("crypto");
+// Import config
+const {get, getMust} = require("../config");
+
+// Import createHash from crypto
+const {createHash} = require("node:crypto");
 
 // Import jsonwebtoken
-const jwt = require("jsonwebtoken");
+const {sign, verify} = require("jsonwebtoken");
 
-// Import UUID generator
-const {v4: uuidV4} = require("uuid");
-
-// Import SHA256 generator
-const {sha256} = require("js-sha256");
-
-// Import inspect of BFAP
-const {inspect: bfapInspact} = require("../utils/bfap");
-
-// Import constant
-const constant = require("../init/const");
-
-const {getMust} = require("../config");
-
+// Import useJwtSecret
 const {useJwtSecret} = require("../init/jwt_secret");
-const {useCache} = require("../init/cache");
 
+// Define jwtSecret
 const jwtSecret = useJwtSecret();
-const cache = useCache();
 
-const {
-    getPosixTimestamp,
-} = require("../utils/native");
+// Define hash function - SHA256
+const sha256hex = (data) =>
+    createHash("sha256").update(data).digest("hex");
 
-// Define generalIssueOptions generator
-const generalIssueOptions = ({type}) => ({
+// Define issueOptions
+const issueOptions = {
     algorithm: "HS256",
     expiresIn: "1d",
     notBefore: "500ms",
     audience: getMust("SARA_AUDIENCE_URL"),
-    issuer: sha256(jwtSecret),
+    issuer: get("SARA_ISSUER") || sha256hex(jwtSecret),
     noTimestamp: false,
     mutatePayload: false,
     header: {
         sara: {
             version: 1,
-            type: type,
+            type: "auth",
             point: {
                 client: {
                     login: getMust("SARA_CLIENT_LOGIN_URL"),
@@ -58,141 +47,62 @@ const generalIssueOptions = ({type}) => ({
             },
         },
     },
-});
+};
 
-// Define generalValidateOptions generator
-const generalValidateOptions = () => ({
+// Define validateOptions
+const validateOptions = {
     algorithms: ["HS256"],
+    issuer: get("SARA_ISSUER") || sha256hex(jwtSecret),
     audience: getMust("SARA_AUDIENCE_URL"),
-    issuer: sha256(jwtSecret),
     complete: true,
-});
+};
 
 /**
- * Issue function (Auth)
+ * Issue token
  * @param {object} user - The user data to issue.
- * @return {object|null}
+ * @return {string}
  */
-function issueAuthToken(user) {
-    const issueOptions = generalIssueOptions({type: "auth"});
-    const jti = uuidV4(null, null, null);
-    const secret = crypto.randomInt(2048, 1000000).toString();
-    const payload = {
-        jti,
-        user,
-        sub: user._id || user.email,
-        sec: sha256([jti, secret].join(".")),
-    };
-    const token = jwt.sign(
-        payload,
-        jwtSecret,
-        issueOptions,
-        null,
-    );
-    return {token, secret};
+function issue(user) {
+    const payload = {user, sub: user._id};
+    return sign(payload, jwtSecret, issueOptions);
 }
 
 /**
- * Issue function (Code)
- * @param {number} codeLength - Length of code to issue.
- * @param {object} data - The metadata to pass
- * @return {object|null}
- */
-function issueCodeToken(codeLength, data) {
-    const code = crypto.randomInt(
-        10 ** (codeLength - 1),
-        (10 ** codeLength) - 1,
-    ).toString();
-    const codeSecret = `${jwtSecret}_${code}`;
-    const issueOptions = generalIssueOptions({type: "code"});
-    const payload = {
-        data,
-        sub: data._id || data.email,
-        jti: uuidV4(null, null, null),
-    };
-    const token = jwt.sign(
-        payload,
-        codeSecret,
-        issueOptions,
-        null,
-    );
-    return {token, code};
-}
-
-/**
- * Validate function (Auth)
+ * Validate token
+ * @module sara_token
+ * @function
  * @param {string} token - The token to valid.
- * @return {boolean|object}
+ * @return {object}
  */
-function validateAuthToken(token) {
-    try {
-        const validateOptions = generalValidateOptions();
-        const data = jwt.verify(token, jwtSecret, validateOptions, null);
-        if (
-            data?.header?.sara?.version !== 1 ||
-            data?.header?.sara?.type !== "auth"
-        ) {
-            console.error("invalid_sara_code_token");
-            return false;
-        }
-        return data.payload;
-    } catch (e) {
-        console.error(e);
-        return false;
-    }
-}
+function validate(token) {
+    const result = {
+        userId: null,
+        payload: null,
+        isAborted: false,
+    };
 
-/**
- * Validate function (Code)
- * @param {string} code - The code to valid.
- * @param {string} token - The token to valid.
- * @return {boolean|object}
- */
-function validateCodeToken(code, token) {
-    if (bfapInspact(
-        constant.BFAP_CONFIG_CODE_TOKEN,
-        token,
-    )) {
-        console.error("brute_force");
-        return false;
-    }
     try {
-        const codeSecret = `${jwtSecret}_${code}`;
-        const validateOptions = generalValidateOptions();
-        const data = jwt.verify(token, codeSecret, validateOptions, null);
-        if (
-            data?.header?.sara?.version !== 1 ||
-            data?.header?.sara?.type !== "code"
-        ) {
-            console.error("invalid_sara_code_token");
-            return false;
-        }
-        return data.payload;
-    } catch (e) {
-        console.error(e);
-        return false;
-    }
-}
+        const {header, payload} = verify(token, jwtSecret, validateOptions);
 
-/**
- * Replay attack protection.
- * @param {object} tokenData - The data decoded from token.
- * @return {boolean}
- */
-function isGone(tokenData) {
-    const {jti, exp} = tokenData;
-    const keyName = `token_gone:${jti}`;
-    if (cache.has(keyName)) return true;
-    const ttl = exp - getPosixTimestamp();
-    cache.set(keyName, true, ttl);
-    return false;
+        if (
+            header?.sara?.version !== 1 ||
+            header?.sara?.type !== "auth"
+        ) {
+            throw new Error("invalid sara token type");
+        }
+
+        result.userId = payload.sub;
+        result.payload = payload;
+    } catch (e) {
+        result.isAborted = true;
+        result.payload = e;
+    }
+
+    return result;
 }
 
 // Export (object)
 module.exports = {
-    issueAuthToken,
-    issueCodeToken,
-    validateAuthToken,
-    validateCodeToken,
-    isGone,
+    issue,
+    validate,
 };

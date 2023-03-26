@@ -7,11 +7,14 @@ const {getMust, getEnabled} = require("../config");
 // Import express.js
 const express = require("express");
 
+const auth = require("../middleware/auth");
+
 // Initialize app engine
 const app = express();
 
 // General middleware
 app.use(require("request-ip").mw());
+app.use(auth);
 
 // Optional middleware
 if (getEnabled("ENABLED_REDIRECT_HTTP_HTTPS")) {
@@ -23,7 +26,7 @@ if (getEnabled("ENABLED_CORS")) {
     const cors = require("cors");
     app.use(cors({
         origin: getMust("CORS_ORIGIN"),
-        exposedHeaders: ["Sara-Issue", "Sara-Code"],
+        exposedHeaders: ["Sara-Issue"],
     }));
     if (getEnabled("ENABLED_CORS_ORIGIN_CHECK")) {
         // Check header "Origin"
