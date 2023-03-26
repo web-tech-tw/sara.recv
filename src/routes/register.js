@@ -6,6 +6,7 @@ const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
 
 const {useDatabase} = require("../init/database");
+const {useCache} = require("../init/cache");
 
 const utilMailSender = require("../utils/mail_sender");
 const utilSaraToken = require("../utils/sara_token");
@@ -27,6 +28,7 @@ const router = newRouter();
 router.use(express.urlencoded({extended: true}));
 
 const database = useDatabase();
+const cache = useCache();
 
 router.post("/",
     middlewareValidator.body("nickname").notEmpty(),
@@ -51,6 +53,9 @@ router.post("/",
                 ip_address: utilVisitor.getIPAddress(req),
                 code,
             });
+            if (getMust("NODE_ENV") === "testing") {
+                cache.set("_testing_code", code);
+            }
         } catch (e) {
             console.error(e);
             res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);

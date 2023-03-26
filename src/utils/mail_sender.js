@@ -1,10 +1,11 @@
 "use strict";
 // Mail Sender of Sara
 
-const nodemailer = require("nodemailer");
 const {getMust, getEnabled} = require("../config");
 
-const utilTesting = require("./testing");
+const constant = require("../init/const");
+
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
     host: getMust("MAIL_SMTP_HOST"),
@@ -16,13 +17,15 @@ const transporter = nodemailer.createTransport({
     } : null,
 });
 
+const isTestMailAddress = (addr) =>
+    addr.endsWith("@" + constant.TEST_EMAIL_DOMAIN);
+
 module.exports = function(template, data) {
-    if (utilTesting.isTestMailAddress(data.to)) {
+    if (isTestMailAddress(data.to)) {
         return new Promise((resolve) => {
-            utilTesting.log(
-                "\nmail template:", template,
-                "\nmail data:", data,
-            );
+            if (getMust("NODE_ENV") !== "testing") {
+                console.info("new_mail", {template, data});
+            }
             resolve();
         });
     }
