@@ -19,7 +19,10 @@ const transporter = nodemailer.createTransport({
 module.exports = function(template, data) {
     if (utilTesting.isTestMailAddress(data.to)) {
         return new Promise((resolve) => {
-            utilTesting.log("\nmail template:", template, "\nmail data:", data);
+            utilTesting.log(
+                "\nmail template:", template,
+                "\nmail data:", data,
+            );
             resolve();
         });
     }
