@@ -43,6 +43,7 @@ jobs:
 
   build-and-push-image:
     name: Create and publish a Docker image
+    needs: test-application
     runs-on: ubuntu-latest
     permissions:
       contents: read
