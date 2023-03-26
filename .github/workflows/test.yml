@@ -19,6 +19,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Copy config from sample
+        run: cp .env.sample .env
+
       - name: Install dependencies
         run: npm install
 
