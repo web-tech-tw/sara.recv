@@ -41,7 +41,7 @@ router.post("/",
             created_at: utilNative.getPosixTimestamp(),
             updated_at: utilNative.getPosixTimestamp(),
         };
-        const {code, sessionId} = utilCodeSession.createOne(metadata, 7);
+        const {code, sessionId} = utilCodeSession.createOne(metadata, 7, 1800);
 
         // Handle mail
         try {

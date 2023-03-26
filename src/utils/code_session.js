@@ -13,13 +13,14 @@ const getSessionCodeName = (sessionId, code) => `${sessionId}@${code}`;
  * Create a code session with data.
  * @param {any} sessionData the data
  * @param {number} codeLength length of the code
+ * @param {number} ttl the time to live in seconds
  * @return {object}
  */
-function createOne(sessionData, codeLength) {
+function createOne(sessionData, codeLength, ttl) {
     const sessionId = generateNanoId();
     const code = generateRandomCode(codeLength);
     const sessionCodeName = getSessionCodeName(sessionId, code);
-    cache.set(sessionCodeName, sessionData);
+    cache.set(sessionCodeName, sessionData, ttl);
     return {code, sessionId};
 }
 

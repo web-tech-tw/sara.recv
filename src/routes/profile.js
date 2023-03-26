@@ -74,7 +74,7 @@ router.put("/email",
             _id: req.auth.id,
             email: req.body.email,
         };
-        const {code, sessionId} = utilCodeSession.createOne(metadata, 8);
+        const {code, sessionId} = utilCodeSession.createOne(metadata, 8, 1800);
 
         // Handle conflict
         const User = database.model("User", schemaUser);
