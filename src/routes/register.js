@@ -18,6 +18,7 @@ const schemaUser = require("../schemas/user");
 
 const middlewareInspector = require("../middleware/inspector");
 const middlewareValidator = require("express-validator");
+const middlewareRestrictor = require("../middleware/restrictor");
 
 // Create router
 const {Router: newRouter} = express;
@@ -31,6 +32,7 @@ router.post("/",
     middlewareValidator.body("nickname").notEmpty(),
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
+    middlewareRestrictor(20, 3600, false),
     async (req, res) => {
         // Handle code and metadata
         const metadata = {
@@ -77,6 +79,7 @@ router.post("/verify",
     middlewareValidator.body("code").isLength({min: 7, max: 7}),
     middlewareValidator.body("session_id").notEmpty(),
     middlewareInspector,
+    middlewareRestrictor(20, 3600, false),
     async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
@@ -104,8 +107,7 @@ router.post("/verify",
         const userData = await utilUser.saveData(user);
 
         // Generate token
-        const token = utilSaraToken.
-            issue(userData);
+        const token = utilSaraToken.issue(userData);
 
         // Send response
         res.

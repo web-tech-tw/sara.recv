@@ -15,6 +15,7 @@ const schemaUser = require("../schemas/user");
 
 const middlewareInspector = require("../middleware/inspector");
 const middlewareValidator = require("express-validator");
+const middlewareRestrictor = require("../middleware/restrictor");
 
 // Create router
 const {Router: newRouter} = express;
@@ -27,6 +28,7 @@ const database = useDatabase();
 router.post("/",
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
+    middlewareRestrictor(10, 3600, false),
     async (req, res) => {
         // Check user exists by the email address
         const User = database.model("User", schemaUser);
@@ -68,6 +70,7 @@ router.post("/verify",
     middlewareValidator.body("code").isLength({min: 6, max: 6}).notEmpty(),
     middlewareValidator.body("session_id").notEmpty(),
     middlewareInspector,
+    middlewareRestrictor(10, 3600, false),
     async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
