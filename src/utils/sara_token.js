@@ -31,7 +31,7 @@ const issueOptions = {
     mutatePayload: false,
     header: {
         sara: {
-            version: 1,
+            version: 2,
             type: "auth",
         },
     },
@@ -73,7 +73,7 @@ function validate(token) {
         const {header, payload} = verify(token, jwtSecret, validateOptions);
 
         if (
-            header?.sara?.version !== 1 ||
+            header?.sara?.version !== 2 ||
             header?.sara?.type !== "auth"
         ) {
             throw new Error("invalid sara token type");

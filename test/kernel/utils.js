@@ -19,7 +19,7 @@ function generateFakeUser() {
 
     return {
         nickname: `Sara Hoshikawa - ${sessionCode}`,
-        email: `sara_${sessionCode}@web-tech.github.io`,
+        email: `sara_${sessionCode}@web-tech-tw.github.io`,
     };
 }
 

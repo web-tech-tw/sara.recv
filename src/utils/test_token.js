@@ -7,7 +7,7 @@ const {isProduction} = require("../config");
 const DEFAULT_FAKE_USER = {
     id: "fake_user",
     nickname: "The Fake User",
-    email: "the_fake_user@web-tech.github.io",
+    email: "the_fake_user@web-tech-tw.github.io",
     roles: [],
 };
 
@@ -24,9 +24,9 @@ function issue(user) {
     }
 
     user = user || DEFAULT_FAKE_USER;
-    return Buffer
-        .from(JSON.stringify(user), "utf-8")
-        .toString("base64");
+    return Buffer.
+        from(JSON.stringify(user), "utf-8").
+        toString("base64");
 }
 
 /**
@@ -49,9 +49,9 @@ function validate(token) {
 
     try {
         const data = JSON.parse(
-            Buffer
-                .from(token, "base64")
-                .toString("utf-8"),
+            Buffer.
+                from(token, "base64").
+                toString("utf-8"),
         );
 
         const payload = {
