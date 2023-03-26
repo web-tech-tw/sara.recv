@@ -1,6 +1,6 @@
-# template.recv
+# sara.recv
 
-後端 API 通用模板
+無密碼式身分認證系統
 
 ## Development
 
