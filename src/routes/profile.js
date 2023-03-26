@@ -1,6 +1,6 @@
 "use strict";
 
-const {getMust, isProduction} = require("../config");
+const {getMust} = require("../config");
 
 const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
@@ -12,7 +12,6 @@ const utilSaraToken = require("../utils/sara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilVisitor = require("../utils/visitor");
 const utilUser = require("../utils/user");
-const utilTesting = require("../utils/testing");
 
 const schemaUser = require("../schemas/user");
 
@@ -83,14 +82,17 @@ router.put("/email",
         }
 
         // Handle mail
-        const mailState = await utilMailSender("update_email", {
-            to: req.body.email,
-            website: getMust("SARA_AUDIENCE_URL"),
-            ip_address: utilVisitor.getIPAddress(req),
-            code,
-        });
-        if (!isProduction()) {
-            utilTesting.log(mailState);
+        try {
+            await utilMailSender("update_email", {
+                to: req.body.email,
+                website: getMust("SARA_AUDIENCE_URL"),
+                ip_address: utilVisitor.getIPAddress(req),
+                code,
+            });
+        } catch (e) {
+            console.error(e);
+            res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
+            return;
         }
 
         // Send response

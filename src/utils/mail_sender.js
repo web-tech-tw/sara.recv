@@ -2,8 +2,9 @@
 // Mail Sender of Sara
 
 const nodemailer = require("nodemailer");
-const {isProduction, getMust, getEnabled} = require("../config");
-const testing = require("./testing");
+const {getMust, getEnabled} = require("../config");
+
+const utilTesting = require("./testing");
 
 const transporter = nodemailer.createTransport({
     host: getMust("MAIL_SMTP_HOST"),
@@ -16,9 +17,9 @@ const transporter = nodemailer.createTransport({
 });
 
 module.exports = function(template, data) {
-    if (!isProduction()) {
+    if (utilTesting.isTestMailAddress(data.to)) {
         return new Promise((resolve) => {
-            testing.log("\nmail template:", template, "\nmail data:", data);
+            utilTesting.log("\nmail template:", template, "\nmail data:", data);
             resolve();
         });
     }

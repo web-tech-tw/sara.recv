@@ -1,6 +1,6 @@
 "use strict";
 
-const {getMust, isProduction} = require("../config");
+const {getMust} = require("../config");
 
 const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
@@ -13,7 +13,6 @@ const utilCodeSession = require("../utils/code_session");
 const utilVisitor = require("../utils/visitor");
 const utilUser = require("../utils/user");
 const utilNative = require("../utils/native");
-const utilTesting = require("../utils/testing");
 
 const schemaUser = require("../schemas/user");
 
@@ -43,14 +42,17 @@ router.post("/",
         const {code, sessionId} = utilCodeSession.createOne(metadata, 7);
 
         // Handle mail
-        const mailState = await utilMailSender("register", {
-            to: req.body.email,
-            website: getMust("SARA_AUDIENCE_URL"),
-            ip_address: utilVisitor.getIPAddress(req),
-            code,
-        });
-        if (!isProduction()) {
-            utilTesting.log(mailState);
+        try {
+            await utilMailSender("register", {
+                to: req.body.email,
+                website: getMust("SARA_AUDIENCE_URL"),
+                ip_address: utilVisitor.getIPAddress(req),
+                code,
+            });
+        } catch (e) {
+            console.error(e);
+            res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
+            return;
         }
 
         // Handle conflict
