@@ -5,7 +5,7 @@
 const {isProduction} = require("../config");
 
 const DEFAULT_FAKE_USER = {
-    id: "fake_user",
+    _id: "fake_user",
     nickname: "The Fake User",
     email: "the_fake_user@web-tech-tw.github.io",
     roles: [],
@@ -48,18 +48,14 @@ function validate(token) {
     };
 
     try {
-        const data = JSON.parse(
+        const profile = JSON.parse(
             Buffer.
                 from(token, "base64").
                 toString("utf-8"),
         );
+        const payload = {profile};
 
-        const payload = {
-            sub: data.id,
-            user: data,
-        };
-
-        result.userId = payload.sub;
+        result.userId = payload.profile._id;
         result.payload = payload;
     } catch (e) {
         result.isAborted = true;

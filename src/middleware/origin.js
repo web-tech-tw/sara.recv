@@ -3,28 +3,28 @@
 // if not, interrupt it.
 
 // Import config
-const {getMust} = require("../config");
-
-// Import getUserAgent
-const {getUserAgent} = require("../utils/visitor");
+const {isProduction, getMust} = require("../config");
 
 // Import StatusCodes
 const {StatusCodes} = require("http-status-codes");
 
 // Export (function)
 module.exports = (req, res, next) => {
-    const userAgent = getUserAgent(req);
-    if (userAgent === "sara_client/2.0") {
-        next();
+    const actualUrl = req.header("Origin");
+    const expectedUrl = getMust("CORS_ORIGIN");
+    if (actualUrl !== expectedUrl) {
+        if (!isProduction()) {
+            // Debug message
+            console.warn(
+                "CORS origin header mismatch:",
+                `actual "${actualUrl}"`,
+                `expected "${expectedUrl}"`,
+            );
+        }
+        res.sendStatus(StatusCodes.FORBIDDEN);
         return;
     }
 
-    const originUrl = req.header("Origin");
-    if (originUrl === getMust("CORS_ORIGIN")) {
-        next();
-        return;
-    }
-
-    res.sendStatus(StatusCodes.FORBIDDEN);
-    return;
+    // Call next middleware
+    next();
 };

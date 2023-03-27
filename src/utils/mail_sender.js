@@ -23,7 +23,7 @@ const isTestMailAddress = (addr) =>
 module.exports = function(template, data) {
     if (isTestMailAddress(data.to)) {
         return new Promise((resolve) => {
-            if (getMust("NODE_ENV") !== "testing") {
+            if (getMust("NODE_ENV") === "development") {
                 console.info("new_mail", {template, data});
             }
             resolve();

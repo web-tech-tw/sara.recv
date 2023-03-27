@@ -4,7 +4,10 @@
 // To interrupt the request which without the request,
 // please use "access.js" middleware.
 
-// Import StatusCodes
+// Import isProduction
+const {isProduction} = require("../config");
+
+// Import isObjectPropExists
 const {isObjectPropExists} = require("../utils/native");
 
 const saraTokenAuth = require("../utils/sara_token");
@@ -16,8 +19,12 @@ const authMethods = {
     "TEST": testTokenAuth.validate,
 };
 
+// Check if the function will return a Promise
+const isAsync = (func) =>
+    func.constructor.name === "AsyncFunction";
+
 // Export (function)
-module.exports = (req, _, next) => {
+module.exports = async (req, _, next) => {
     const authCode = req.header("Authorization");
     if (!authCode) {
         next();
@@ -42,11 +49,26 @@ module.exports = (req, _, next) => {
         return;
     }
 
+    const authMethod = authMethods[method];
+    const authResult = isAsync(authMethod) ?
+        await authMethod(secret) :
+        authMethod(secret);
+
+    if (!isProduction()) {
+        // Debug message
+        console.warn(
+            "An authentication detected:",
+            authMethod,
+            authResult,
+            "\n",
+        );
+    }
+
     const {
         userId,
         payload,
         isAborted,
-    } = authMethods[method](secret);
+    } = authResult;
     if (isAborted) {
         next();
         return;
