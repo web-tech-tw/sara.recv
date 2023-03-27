@@ -42,7 +42,7 @@ jobs:
         run: npm run test
 
   build-and-push-image:
-    name: Create and publish a Docker image
+    name: Build and publish a Docker image
     needs: test-application
     runs-on: ubuntu-latest
     permissions:
@@ -73,3 +73,14 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  deploy-service:
+    name: Deploy application as service
+    needs: build-and-push-image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger deploy webhook
+        uses: wei/curl@master
+        with:
+          args: ${{ secrets.DEPLOY_WEBHOOK_URL }}
