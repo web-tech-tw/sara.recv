@@ -31,7 +31,7 @@ try {
         throw error;
     }
     console.error(
-        "JWT secret is NOT EXISTS,",
+        "secret is NOT EXISTS,",
         `please generate one with "${generateCommand}".`,
         "\n",
     );
@@ -41,7 +41,7 @@ try {
 // Check length
 if (secret.length < 2048) {
     console.error(
-        "JWT secret is NOT SAFE,",
+        "secret is NOT SAFE,",
         `please generate new one with "${generateCommand}".`,
         "\n",
     );
