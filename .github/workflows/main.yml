@@ -32,7 +32,7 @@ jobs:
       - name: Copy config from sample
         run: cp .env.sample .env
 
-      - name: Generate new JWT secret
+      - name: Generate new secret
         run: npm run new-secret
 
       - name: Install dependencies
