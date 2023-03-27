@@ -1,7 +1,7 @@
 {
   "name": "sara.recv",
   "version": "1.0.0",
-  "description": "Node.js on Docker",
+  "description": "A passwordless authentication system.",
   "author": "Taiwan Web Technology Promotion Organization",
   "license": "MIT",
   "main": "app.js",
