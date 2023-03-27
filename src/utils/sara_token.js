@@ -10,11 +10,11 @@ const {createHash} = require("node:crypto");
 // Import jsonwebtoken
 const {sign, verify} = require("jsonwebtoken");
 
-// Import useJwtSecret
-const {useJwtSecret} = require("../init/jwt_secret");
+// Import useSecret
+const {useSecret} = require("../init/secret");
 
-// Define jwtSecret
-const jwtSecret = useJwtSecret();
+// Define secret
+const secret = useSecret();
 
 // Define hash function - SHA256
 const sha256hex = (data) =>
@@ -26,7 +26,7 @@ const issueOptions = {
     expiresIn: "1d",
     notBefore: "500ms",
     audience: getMust("SARA_AUDIENCE_URL"),
-    issuer: get("SARA_ISSUER") || sha256hex(jwtSecret),
+    issuer: get("SARA_ISSUER") || sha256hex(secret),
     noTimestamp: false,
     mutatePayload: false,
     header: {
@@ -40,7 +40,7 @@ const issueOptions = {
 // Define validateOptions
 const validateOptions = {
     algorithms: ["HS256"],
-    issuer: get("SARA_ISSUER") || sha256hex(jwtSecret),
+    issuer: get("SARA_ISSUER") || sha256hex(secret),
     audience: getMust("SARA_AUDIENCE_URL"),
     complete: true,
 };
@@ -52,7 +52,7 @@ const validateOptions = {
  */
 function issue(user) {
     const payload = {user, sub: user._id};
-    return sign(payload, jwtSecret, issueOptions);
+    return sign(payload, secret, issueOptions);
 }
 
 /**
@@ -70,7 +70,7 @@ function validate(token) {
     };
 
     try {
-        const {header, payload} = verify(token, jwtSecret, validateOptions);
+        const {header, payload} = verify(token, secret, validateOptions);
 
         if (
             header?.sara?.version !== 2 ||

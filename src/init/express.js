@@ -7,14 +7,16 @@ const {getMust, getEnabled} = require("../config");
 // Import express.js
 const express = require("express");
 
-const auth = require("../middleware/auth");
-
 // Initialize app engine
 const app = express();
 
-// General middleware
-app.use(require("request-ip").mw());
-app.use(auth);
+// Create middleware handlers
+const middlewareRequestIp = require("request-ip").mw();
+const middlewareAuth = require("../middleware/auth");
+
+// Register global middleware
+app.use(middlewareRequestIp);
+app.use(middlewareAuth);
 
 // Optional middleware
 if (getEnabled("ENABLED_REDIRECT_HTTP_HTTPS")) {
