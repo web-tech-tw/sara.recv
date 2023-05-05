@@ -30,6 +30,39 @@ router.use(express.urlencoded({extended: true}));
 const database = useDatabase();
 const cache = useCache();
 
+/**
+ * @openapi
+ * /user:
+ *   post:
+ *     tags:
+ *       - user
+ *     summary: Register a user
+ *     description: Endpoint to register a user
+ *     parameters:
+ *       - in: body
+ *         name: user
+ *         schema:
+ *           type: object
+ *           required:
+ *             - nickname
+ *             - email
+ *           properties:
+ *             nickname:
+ *               type: string
+ *             email:
+ *               type: string
+ *         required: true
+ *         description: The user's nickname and email.
+ *     responses:
+ *       201:
+ *         description: Returns the session ID
+ *                      if the user is registered successfully.
+ *       400:
+ *         description: Returns an error message if the request is invalid.
+ *       409:
+ *         description: Returns an error message
+ *                      if the user's email already exists in the system.
+ */
 router.post("/",
     middlewareValidator.body("nickname").notEmpty(),
     middlewareValidator.body("email").isEmail(),
@@ -47,7 +80,7 @@ router.post("/",
 
         // Handle mail
         try {
-            await utilMailSender("register", {
+            await utilMailSender("create_user", {
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
                 ip_address: utilVisitor.getIPAddress(req),
@@ -73,13 +106,53 @@ router.post("/",
         res.
             status(StatusCodes.CREATED).
             send({
-                session_type: "register",
+                session_type: "user",
                 session_id: sessionId,
             });
     },
 );
 
-router.post("/verify",
+/**
+ * @openapi
+ * /user:
+ *   patch:
+ *     tags:
+ *       - user
+ *     summary: Verify user's registration via code sent to email
+ *     description: This API endpoint verifies the user's registration using
+ *                  a code that was sent to their email address.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - code
+ *               - session_id
+ *             properties:
+ *               code:
+ *                 type: string
+ *               session_id:
+ *                 type: string
+ *           example:
+ *             code: "1234567"
+ *             session_id: "abc123"
+ *     responses:
+ *       '201':
+ *         description: Returns a 201 status code with
+ *                      a 'Sara-Issue' token in the header.
+ *       '401':
+ *         description: Returns a 401 status code
+ *                      if the provided code and session ID
+ *                      do not match or are invalid.
+ *       '409':
+ *         description: Returns a 409 status code if a user
+ *                      with the provided email address already exists.
+ */
+router.patch("/",
     middlewareValidator.body("code").isNumeric(),
     middlewareValidator.body("code").isLength({min: 7, max: 7}),
     middlewareValidator.body("session_id").notEmpty(),
@@ -127,5 +200,5 @@ module.exports = () => {
     const app = useApp();
 
     // Mount the router
-    app.use("/register", router);
+    app.use("/user", router);
 };

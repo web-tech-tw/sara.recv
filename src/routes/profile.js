@@ -30,6 +30,27 @@ router.use(express.urlencoded({extended: true}));
 const database = useDatabase();
 const cache = useCache();
 
+/**
+ * @openapi
+ * /profile:
+ *   get:
+ *     summary: Get user profile
+ *     description: Returns the authenticated user's profile.
+ *     tags:
+ *       - profile
+ *     security:
+ *       - ApiKeyAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profile:
+ *                   $ref: '#/components/schemas/UserProfile'
+ */
 router.get("/",
     middlewareAccess(null),
     async (req, res) => {
@@ -37,6 +58,36 @@ router.get("/",
     },
 );
 
+/**
+ * @openapi
+ * /profile:
+ *   put:
+ *     summary: Update user profile
+ *     description: Updates the authenticated user's profile.
+ *     tags:
+ *       - profile
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       description: User object to be updated
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nickname:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: User profile updated successfully
+ *         headers:
+ *           Sara-Issue:
+ *             description: Bearer token for the updated profile
+ *             schema:
+ *               type: string
+ *       404:
+ *         description: User not found
+ */
 router.put("/",
     middlewareAccess(null),
     async (req, res) => {
@@ -65,6 +116,54 @@ router.put("/",
     },
 );
 
+/**
+ * @openapi
+ * /profile/email:
+ *   put:
+ *     summary: Update user's email
+ *     tags:
+ *       - profile
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 description: New email address of the user
+ *     responses:
+ *       200:
+ *         description: Session created to update user's email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 session_type:
+ *                   type: string
+ *                   description: Type of the session created
+ *                   example: update_email
+ *                 session_id:
+ *                   type: string
+ *                   description: ID of the session created
+ *                   example: 62159db19d393b330e57ca63
+ *       400:
+ *         description: Invalid request body
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Rate limit exceeded
+ *       409:
+ *         description: Email address already in use
+ *       500:
+ *         description: Internal server error
+ */
 router.put("/email",
     middlewareAccess(null),
     middlewareValidator.body("email").isEmail().notEmpty(),
@@ -110,7 +209,37 @@ router.put("/email",
     },
 );
 
-router.post("/email/verify",
+/**
+ * @openapi
+ * /profile/email:
+ *   patch:
+ *     summary: Update user email by verification code.
+ *     tags:
+ *       - profile
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 minLength: 8
+ *                 maxLength: 8
+ *               session_id:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: The email is updated successfully.
+ *       401:
+ *         description: Invalid verification code or session ID.
+ *       404:
+ *         description: The user is not found.
+ */
+router.patch("/email",
     middlewareAccess(null),
     middlewareValidator.body("code").isNumeric().notEmpty(),
     middlewareValidator.body("code").isLength({min: 8, max: 8}).notEmpty(),

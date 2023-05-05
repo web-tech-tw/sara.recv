@@ -27,6 +27,50 @@ router.use(express.urlencoded({extended: true}));
 const database = useDatabase();
 const cache = useCache();
 
+/**
+ * @openapi
+ * /token:
+ *   post:
+ *     tags:
+ *       - token
+ *     summary: Issue a token session for a user
+ *     description: Issues a token session for a user
+ *                  by sending an email with a code.
+ *                  The user can use the code to verify their identity later.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: The email address of the user.
+ *                 format: email
+ *                 example: test@example.com
+ *     responses:
+ *       201:
+ *         description: Returns a session ID for the user
+ *                      to verify their identity later.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 session_type:
+ *                   type: string
+ *                   description: The type of the session.
+ *                   example: token
+ *                 session_id:
+ *                   type: string
+ *                   description: The ID of the session.
+ *       404:
+ *         description: Returns "Not Found" if the user cannot be found.
+ *       429:
+ *         description: Returns "Too Many Requests"
+ *                      if the rate limit is exceeded.
+ */
 router.post("/",
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
@@ -45,7 +89,7 @@ router.post("/",
 
         // Handle mail
         try {
-            await utilMailSender("login", {
+            await utilMailSender("create_token", {
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
                 ip_address: utilVisitor.getIPAddress(req),
@@ -64,13 +108,48 @@ router.post("/",
         res.
             status(StatusCodes.CREATED).
             send({
-                session_type: "login",
+                session_type: "token",
                 session_id: sessionId,
             });
     },
 );
 
-router.post("/verify",
+/**
+ * @openapi
+ * /token:
+ *   patch:
+ *     tags:
+ *       - token
+ *     summary: Verify user's identity and issue an access token
+ *     description: Verify user's identity by checking the session_id and
+ *                  code that the user provides.
+ *                  If the session_id and code are valid,
+ *                  the server issues an access token.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: The code that the user receives in the email.
+ *               session_id:
+ *                 type: string
+ *                 description: The ID of the session that
+ *                              the user receives in the email.
+ *     responses:
+ *       201:
+ *         description: Returns a header named
+ *                      "Sara-Issue" that contains the access token.
+ *       401:
+ *         description: Returns "Unauthorized"
+ *                      if the user's identity cannot be verified.
+ *       404:
+ *         description: Returns "Not Found" if the user cannot be found.
+ */
+router.patch("/",
     middlewareValidator.body("code").isNumeric().notEmpty(),
     middlewareValidator.body("code").isLength({min: 6, max: 6}).notEmpty(),
     middlewareValidator.body("session_id").notEmpty(),
@@ -117,5 +196,5 @@ module.exports = () => {
     const app = useApp();
 
     // Mount the router
-    app.use("/login", router);
+    app.use("/token", router);
 };

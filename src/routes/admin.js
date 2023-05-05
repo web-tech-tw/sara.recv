@@ -21,9 +21,37 @@ const router = newRouter();
 
 router.use(express.urlencoded({extended: true}));
 
-router.get("/",
+/**
+ * @openapi
+ * /admin/user/{user_id}:
+ *   get:
+ *     summary: Get user by ID
+ *     description: Get user information by ID
+ *     tags:
+ *       - admin
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - name: user_id
+ *         in: param
+ *         description: ID of the user to retrieve
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: objectId
+ *     responses:
+ *       200:
+ *         description: User information
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+router.get("/user/:user_id",
     middlewareAccess("admin"),
-    middlewareValidator.query("user_id").isMongoId().notEmpty(),
+    middlewareValidator.param("user_id").isMongoId().notEmpty(),
     middlewareInspector,
     async (req, res) => {
         // Check user exists by the ID
@@ -39,7 +67,37 @@ router.get("/",
     },
 );
 
-router.post("/role",
+/**
+ * @openapi
+ * /admin/user/role:
+ *   post:
+ *     summary: Add role to user
+ *     description: Add a role to a user by ID
+ *     tags:
+ *       - admin
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               user_id:
+ *                 type: string
+ *                 format: objectId
+ *               role:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Role added successfully
+ *       404:
+ *         description: User not found
+ *       409:
+ *         description: Role already exists for this user
+ */
+router.post("/user/role",
     middlewareAccess("admin"),
     middlewareValidator.body("user_id").isMongoId().notEmpty(),
     middlewareValidator.body("role").isString().notEmpty(),
@@ -69,7 +127,37 @@ router.post("/role",
     },
 );
 
-router.delete("/role",
+/**
+ * @openapi
+ * /admin/user/role:
+ *   delete:
+ *     summary: Remove role from user
+ *     description: Remove a role from a user by ID
+ *     tags:
+ *       - admin
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               user_id:
+ *                 type: string
+ *                 format: objectId
+ *               role:
+ *                 type: string
+ *     responses:
+ *       204:
+ *         description: Role removed successfully
+ *       404:
+ *         description: User not found or role not found
+ *       410:
+ *         description: Role does not exist for this user
+ */
+router.delete("/user/role",
     middlewareAccess("admin"),
     middlewareValidator.body("user_id").isMongoId().notEmpty(),
     middlewareValidator.body("role").isString().notEmpty(),
@@ -107,5 +195,5 @@ module.exports = () => {
     const app = useApp();
 
     // Mount the router
-    app.use("/admin/user", router);
+    app.use("/admin", router);
 };
