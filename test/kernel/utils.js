@@ -33,14 +33,14 @@ async function registerFakeUser(userData) {
     const cache = useCache();
 
     const verifyResponse = await request(app)
-        .post("/register")
+        .post("/users")
         .send(userData)
         .type("form")
         .expect(StatusCodes.CREATED);
 
     const {session_id: sessionCode} = verifyResponse.body;
     const statusResponse = await request(app)
-        .post("/register/verify")
+        .patch("/users")
         .send({
             session_id: sessionCode,
             code: cache.take("_testing_code"),

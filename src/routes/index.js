@@ -1,14 +1,15 @@
 "use strict";
 
-// Routes
-const routes = [
-    require("./login"),
-    require("./profile"),
-    require("./register"),
-    require("./admin"),
+// Routers
+exports.routerFiles = [
+    "./admin.js",
+    "./swagger.js",
+    "./tokens.js",
+    "./users.js",
 ];
 
 // Load routes
-module.exports = () => {
-    routes.forEach((c) => c());
+exports.load = () => {
+    const routerMappers = exports.routerFiles.map((n) => require(n));
+    routerMappers.forEach((c) => c());
 };
