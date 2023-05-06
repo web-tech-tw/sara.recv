@@ -79,7 +79,7 @@ router.get("/users/:user_id",
  *           schema:
  *             type: object
  *             properties:
- *               role:
+ *               role_name:
  *                 type: string
  *     parameters:
  *       - name: user_id
