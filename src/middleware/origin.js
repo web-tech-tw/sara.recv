@@ -8,23 +8,35 @@ const {isProduction, getMust} = require("../config");
 // Import StatusCodes
 const {StatusCodes} = require("http-status-codes");
 
+// Import isObjectPropExists
+const {isObjectPropExists} = require("../utils/native");
+
 // Export (function)
 module.exports = (req, res, next) => {
-    const actualUrl = req.header("Origin");
-    const expectedUrl = getMust("CORS_ORIGIN");
-    if (actualUrl !== expectedUrl) {
-        if (!isProduction()) {
-            // Debug message
-            console.warn(
-                "CORS origin header mismatch:",
-                `actual "${actualUrl}"`,
-                `expected "${expectedUrl}"`,
-            );
-        }
-        res.sendStatus(StatusCodes.FORBIDDEN);
+    // Check the request is CORS
+    if (isObjectPropExists(req.headers, "origin")) {
+        next();
         return;
     }
 
-    // Call next middleware
-    next();
+    // Get URLs
+    const actualUrl = req.header("origin");
+    const expectedUrl = getMust("CORS_ORIGIN");
+
+    // Origin match
+    if (actualUrl === expectedUrl) {
+        next();
+        return;
+    }
+
+    // Origin mismatch
+    if (!isProduction()) {
+        // Debug message
+        console.warn(
+            "CORS origin header mismatch:",
+            `actual "${actualUrl}"`,
+            `expected "${expectedUrl}"`,
+        );
+    }
+    res.sendStatus(StatusCodes.FORBIDDEN);
 };
