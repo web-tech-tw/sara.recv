@@ -14,7 +14,11 @@ const {isObjectPropExists} = require("../utils/native");
 // Export (function)
 module.exports = (req, res, next) => {
     // Check the request is CORS
-    if (isObjectPropExists(req.headers, "origin")) {
+    if (!isObjectPropExists(req.headers, "origin")) {
+        if (!isProduction()) {
+            // Debug message
+            console.warn("CORS origin header is not detected");
+        }
         next();
         return;
     }
@@ -25,6 +29,14 @@ module.exports = (req, res, next) => {
 
     // Origin match
     if (actualUrl === expectedUrl) {
+        if (!isProduction()) {
+            // Debug message
+            console.warn(
+                "CORS origin header match:",
+                `actual "${actualUrl}"`,
+                `expected "${expectedUrl}"`,
+            );
+        }
         next();
         return;
     }
