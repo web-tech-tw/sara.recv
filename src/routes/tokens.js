@@ -3,16 +3,14 @@
 const {getMust} = require("../config");
 const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
-
-const {useDatabase} = require("../init/database");
 const {useCache} = require("../init/cache");
+
+const User = require("../models/user");
 
 const utilMailSender = require("../utils/mail_sender");
 const utilSaraToken = require("../utils/sara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilVisitor = require("../utils/visitor");
-
-const schemaUser = require("../schemas/user");
 
 const middlewareInspector = require("../middleware/inspector");
 const middlewareValidator = require("express-validator");
@@ -24,15 +22,14 @@ const router = newRouter();
 
 router.use(express.urlencoded({extended: true}));
 
-const database = useDatabase();
 const cache = useCache();
 
 /**
  * @openapi
- * /token:
+ * /tokens:
  *   post:
  *     tags:
- *       - token
+ *       - tokens
  *     summary: Issue a token session for a user
  *     description: Issues a token session for a user
  *                  by sending an email with a code.
@@ -48,7 +45,7 @@ const cache = useCache();
  *                 type: string
  *                 description: The email address of the user.
  *                 format: email
- *                 example: test@example.com
+ *                 example: test@example.org
  *     responses:
  *       201:
  *         description: Returns a session ID for the user
@@ -77,7 +74,6 @@ router.post("/",
     middlewareRestrictor(10, 3600, false),
     async (req, res) => {
         // Check user exists by the email address
-        const User = database.model("User", schemaUser);
         if (!(await User.findOne({email: req.body.email}).exec())) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
@@ -116,10 +112,10 @@ router.post("/",
 
 /**
  * @openapi
- * /token:
+ * /tokens:
  *   patch:
  *     tags:
- *       - token
+ *       - tokens
  *     summary: Verify user's identity and issue an access token
  *     description: Verify user's identity by checking the session_id and
  *                  code that the user provides.
@@ -171,7 +167,6 @@ router.patch("/",
         }
 
         // Check user exists by the email address
-        const User = database.model("User", schemaUser);
         const user = await User.findOne({email: metadata.email}).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
@@ -196,5 +191,5 @@ module.exports = () => {
     const app = useApp();
 
     // Mount the router
-    app.use("/token", router);
+    app.use("/tokens", router);
 };

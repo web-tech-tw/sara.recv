@@ -7,9 +7,11 @@ const {useApp, express} = require("../init/express");
 const {join: pathJoin} = require("path");
 
 const {routerFiles} = require("./index");
+const {modelFiles} = require("../models");
 
 const swaggerJSDoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
+const toDocSchema = require("mongoose-to-swagger");
 
 const options = {
     definition: {
@@ -31,24 +33,14 @@ const options = {
                     name: "Authorization",
                 },
             },
-            schemas: {
-                UserProfile: {
-                    type: "object",
-                    properties: {
-                        id: {
-                            type: "string",
-                            format: "objectId",
-                        },
-                        username: {
-                            type: "string",
-                        },
-                        email: {
-                            type: "string",
-                            format: "email",
-                        },
-                    },
+            schemas: Object.fromEntries(modelFiles.map(
+                (f) => {
+                    const filename = pathJoin(__dirname, "../models", f);
+                    const model = require(filename);
+                    const schema = toDocSchema(model);
+                    return [schema.title, schema];
                 },
-            },
+            )),
         },
     },
     apis: routerFiles.map(

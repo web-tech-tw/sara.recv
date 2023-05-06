@@ -3,10 +3,9 @@
 // Routers
 exports.routerFiles = [
     "./admin.js",
-    "./profile.js",
     "./swagger.js",
-    "./token.js",
-    "./user.js",
+    "./tokens.js",
+    "./users.js",
 ];
 
 // Load routes

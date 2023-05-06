@@ -16,51 +16,47 @@ const {useCache} = require("../src/init/cache");
 const app = useApp();
 const cache = useCache();
 
-require("../src/routes/index")();
-const to = utils.urlGlue("/login");
+const routerDispatcher = require("../src/routes/index");
+const to = utils.urlGlue("/users");
+routerDispatcher.load();
 
 // Define tests
-describe("/login", function() {
+describe("/users", function() {
     const fakeUser = utils.generateFakeUser();
-    before((done) => {
-        utils.registerFakeUser(fakeUser).
-            then(() => done());
-    });
 
-    step("request", function(done) {
+    step("register", function(done) {
         request(app)
             .post(to("/"))
-            .send({email: fakeUser.email})
+            .send(fakeUser)
             .type("form")
             .set("Accept", "application/json")
             .expect(StatusCodes.CREATED)
             .then((res) => {
                 cache.set("_testing_session_id", res.body.session_id);
+                utils.log(res.body);
                 done();
             })
             .catch((e) => {
-                console.error(e);
+                utils.log(e);
                 done(e);
             });
     });
 
-    step("verify", function(done) {
+    step("verify register", function(done) {
         request(app)
-            .post(to("/verify"))
+            .patch(to("/"))
             .send({
                 session_id: cache.take("_testing_session_id"),
                 code: cache.take("_testing_code"),
             })
             .type("form")
-            .set("Accept", "text/plain")
-            .expect("Content-Type", /plain/)
             .expect(StatusCodes.CREATED)
             .then((res) => {
                 utils.log("sara-issue", res.headers["sara-issue"]);
                 done();
             })
             .catch((e) => {
-                console.error(e);
+                utils.log(e);
                 done(e);
             });
     });
