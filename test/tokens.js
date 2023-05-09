@@ -32,7 +32,7 @@ describe("/tokens", function() {
         request(app)
             .post(to("/"))
             .send({email: fakeUser.email})
-            .type("form")
+            .type("json")
             .set("Accept", "application/json")
             .expect(StatusCodes.CREATED)
             .then((res) => {
@@ -52,7 +52,7 @@ describe("/tokens", function() {
                 session_id: cache.take("_testing_session_id"),
                 code: cache.take("_testing_code"),
             })
-            .type("form")
+            .type("json")
             .set("Accept", "text/plain")
             .expect("Content-Type", /plain/)
             .expect(StatusCodes.CREATED)

@@ -35,7 +35,7 @@ async function registerFakeUser(userData) {
     const verifyResponse = await request(app)
         .post("/users")
         .send(userData)
-        .type("form")
+        .type("json")
         .expect(StatusCodes.CREATED);
 
     const {session_id: sessionCode} = verifyResponse.body;
@@ -45,7 +45,7 @@ async function registerFakeUser(userData) {
             session_id: sessionCode,
             code: cache.take("_testing_code"),
         })
-        .type("form")
+        .type("json")
         .expect(StatusCodes.CREATED);
 
     return statusResponse.status === StatusCodes.CREATED;

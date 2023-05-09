@@ -28,7 +28,7 @@ describe("/users", function() {
         request(app)
             .post(to("/"))
             .send(fakeUser)
-            .type("form")
+            .type("json")
             .set("Accept", "application/json")
             .expect(StatusCodes.CREATED)
             .then((res) => {
@@ -49,7 +49,7 @@ describe("/users", function() {
                 session_id: cache.take("_testing_session_id"),
                 code: cache.take("_testing_code"),
             })
-            .type("form")
+            .type("json")
             .expect(StatusCodes.CREATED)
             .then((res) => {
                 utils.log("sara-issue", res.headers["sara-issue"]);
