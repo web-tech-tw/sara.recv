@@ -69,7 +69,7 @@ router.get("/me",
  *     requestBody:
  *       description: User object to be updated
  *       content:
- *         application/json:
+ *         x-www-form-urlencoded:
  *           schema:
  *             type: object
  *             properties:
@@ -124,7 +124,7 @@ router.put("/me",
  *       - ApiKeyAuth: []
  *     requestBody:
  *       content:
- *         application/json:
+ *         x-www-form-urlencoded:
  *           schema:
  *             type: object
  *             required:
@@ -217,7 +217,7 @@ router.put("/me/email",
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         x-www-form-urlencoded:
  *           schema:
  *             type: object
  *             properties:
@@ -373,7 +373,7 @@ router.post("/",
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         x-www-form-urlencoded:
  *           schema:
  *             type: object
  *             required:

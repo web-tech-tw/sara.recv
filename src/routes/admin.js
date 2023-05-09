@@ -75,7 +75,7 @@ router.get("/users/:user_id",
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         x-www-form-urlencoded:
  *           schema:
  *             type: object
  *             properties:

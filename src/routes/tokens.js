@@ -37,7 +37,7 @@ const cache = useCache();
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         x-www-form-urlencoded:
  *           schema:
  *             type: object
  *             properties:
@@ -124,7 +124,7 @@ router.post("/",
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         x-www-form-urlencoded:
  *           schema:
  *             type: object
  *             properties:
