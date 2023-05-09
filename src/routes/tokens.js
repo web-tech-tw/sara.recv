@@ -20,7 +20,7 @@ const middlewareRestrictor = require("../middleware/restrictor");
 const {Router: newRouter} = express;
 const router = newRouter();
 
-router.use(express.urlencoded({extended: true}));
+router.use(express.json());
 
 const cache = useCache();
 
@@ -37,7 +37,7 @@ const cache = useCache();
  *     requestBody:
  *       required: true
  *       content:
- *         x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -124,7 +124,7 @@ router.post("/",
  *     requestBody:
  *       required: true
  *       content:
- *         x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:

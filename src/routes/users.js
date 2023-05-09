@@ -24,7 +24,7 @@ const middlewareRestrictor = require("../middleware/restrictor");
 const {Router: newRouter} = express;
 const router = newRouter();
 
-router.use(express.urlencoded({extended: true}));
+router.use(express.json());
 
 const cache = useCache();
 
@@ -69,7 +69,7 @@ router.get("/me",
  *     requestBody:
  *       description: User object to be updated
  *       content:
- *         x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -124,7 +124,7 @@ router.put("/me",
  *       - ApiKeyAuth: []
  *     requestBody:
  *       content:
- *         x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             type: object
  *             required:
@@ -217,7 +217,7 @@ router.put("/me/email",
  *     requestBody:
  *       required: true
  *       content:
- *         x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
@@ -373,7 +373,7 @@ router.post("/",
  *     requestBody:
  *       required: true
  *       content:
- *         x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             type: object
  *             required:

@@ -15,7 +15,7 @@ const middlewareValidator = require("express-validator");
 const {Router: newRouter} = express;
 const router = newRouter();
 
-router.use(express.urlencoded({extended: true}));
+router.use(express.json());
 
 /**
  * @openapi
@@ -75,7 +75,7 @@ router.get("/users/:user_id",
  *     requestBody:
  *       required: true
  *       content:
- *         x-www-form-urlencoded:
+ *         application/json:
  *           schema:
  *             type: object
  *             properties:
