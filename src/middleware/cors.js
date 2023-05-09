@@ -16,4 +16,5 @@ module.exports = cors({
     origin: getEnabled("ENABLED_SWAGGER") ?
         [corsOrigin, swaggerCorsOrigin]:
         corsOrigin,
+    exposedHeaders: ["Sara-Issue"],
 });
