@@ -11,6 +11,18 @@ const {useApp} = require("../../src/init/express");
 const {useCache} = require("../../src/init/cache");
 
 /**
+ * Run prepare handlers.
+ * @return {object}
+ */
+async function runPrepareHandlers(...prepareHandlers) {
+    // Waiting for prepare handlers
+    if (prepareHandlers.length > 0) {
+        const preparingPromises = prepareHandlers.map((c) => c());
+        await Promise.all(preparingPromises);
+    }
+}
+
+/**
  * Generate fake user of the testing session.
  * @return {object}
  */
@@ -70,6 +82,7 @@ function urlGlue(baseUrl) {
 }
 
 module.exports = {
+    runPrepareHandlers,
     generateFakeUser,
     registerFakeUser,
     log,

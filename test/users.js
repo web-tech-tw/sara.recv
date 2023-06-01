@@ -12,6 +12,10 @@ const {StatusCodes} = require("http-status-codes");
 const {useApp} = require("../src/init/express");
 const {useCache} = require("../src/init/cache");
 
+const {
+    prepare: prepareDatabase,
+} = require("../src/init/database");
+
 // Initialize tests
 const app = useApp();
 const cache = useCache();
@@ -23,6 +27,12 @@ routerDispatcher.load();
 // Define tests
 describe("/users", function() {
     const fakeUser = utils.generateFakeUser();
+
+    before(async () => {
+        await utils.runPrepareHandlers(
+            prepareDatabase,
+        );
+    });
 
     step("register", function(done) {
         request(app)
