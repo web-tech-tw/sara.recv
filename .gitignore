@@ -5,6 +5,9 @@ secret.key
 # Finder config file
 .DS_Store
 
+# OpenAPI exported file
+openapi_exported.json
+
 # Directories
 node_modules
 ssl_keys

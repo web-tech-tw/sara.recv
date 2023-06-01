@@ -22,6 +22,15 @@ const {useApp} = require("./src/init/express");
 // Initialize application
 const app = useApp();
 
+// Initialize prepare handlers
+const {
+    prepare: prepareDatabase,
+} = require("./src/init/database");
+
+const prepareHandlers = [
+    prepareDatabase,
+];
+
 // Redirect / to INDEX_REDIRECT_URL
 app.get("/", (_, res) => {
     const redirectCode = getMust("INDEX_REDIRECT_TYPE") === "permanent" ?
@@ -36,7 +45,7 @@ app.get("/robots.txt", (_, res) => {
     res.type("txt").send("User-agent: *\nDisallow: /");
 });
 
-// Map routes
+// Load router dispatcher
 const routerDispatcher = require("./src/routes/index");
 routerDispatcher.load();
 
@@ -47,9 +56,11 @@ routerDispatcher.load();
     const statusMessage = `(environment: ${node}, ${runtime})`;
     console.info(appName, statusMessage, "\n====");
 })();
+
 // Mount application and execute it
-require("./src/execute")(app, ({type, hostname, port}) => {
-    const protocol = type === "general" ? "http" : "https";
-    console.info(`Protocol "${protocol}" is listening at`);
-    console.info(`${protocol}://${hostname}:${port}`);
-});
+require("./src/execute")(app, prepareHandlers,
+    ({protocol, hostname, port}) => {
+        console.info(`Protocol "${protocol}" is listening at`);
+        console.info(`${protocol}://${hostname}:${port}`);
+    },
+);

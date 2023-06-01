@@ -11,7 +11,8 @@ const database = require("mongoose");
 database.set("strictQuery", true);
 
 // Connect to MongoDB
-database.connect(getMust("MONGODB_URI"));
+exports.prepare = () =>
+    database.connect(getMust("MONGODB_URI"));
 
 // Export as useFunction
 exports.useDatabase = () => database;

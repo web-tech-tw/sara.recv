@@ -1,14 +1,16 @@
 "use strict";
 
+// Import constant
+const constant = require("./src/init/const");
+
+// Import modules
 const fs = require("node:fs");
+
 const {
     createHash,
     randomInt,
     randomBytes,
 } = require("node:crypto");
-
-// Import constant
-const constant = require("./src/init/const");
 
 // Define variables
 const length = randomInt(2048, 1000000);
