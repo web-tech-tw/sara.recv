@@ -286,21 +286,23 @@ router.patch("/me/email",
  *       - users
  *     summary: Register a user
  *     description: Endpoint to register a user
- *     parameters:
- *       - in: body
- *         name: user
- *         schema:
- *           type: object
- *           required:
- *             - nickname
- *             - email
- *           properties:
- *             nickname:
- *               type: string
- *             email:
- *               type: string
- *         required: true
- *         description: The user's nickname and email.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - nickname
+ *               - email
+ *             properties:
+ *               nickname:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *           example:
+ *             nickname: JohnDoe
+ *             email: johndoe@example.com
  *     responses:
  *       201:
  *         description: Returns the session ID

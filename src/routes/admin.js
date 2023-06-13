@@ -29,7 +29,7 @@ router.use(express.json());
  *       - ApiKeyAuth: []
  *     parameters:
  *       - name: user_id
- *         in: param
+ *         in: path
  *         description: ID of the user to retrieve
  *         required: true
  *         schema:
