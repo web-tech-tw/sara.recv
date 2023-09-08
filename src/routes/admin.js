@@ -51,7 +51,7 @@ router.get("/users/:user_id",
     middlewareInspector,
     async (req, res) => {
         // Check user exists by the ID
-        const user = await User.findById(req.query.user_id).exec();
+        const user = await User.findById(req.params.user_id).exec();
 
         // Send response
         if (!user) {
