@@ -54,7 +54,7 @@ router.get("/users/:user_id",
         const user = await User.findById(req.params.user_id).exec();
 
         // Send response
-        if (!user) {
+        if (user) {
             res.send(user);
         } else {
             res.sendStatus(StatusCodes.NOT_FOUND);
