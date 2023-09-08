@@ -50,8 +50,11 @@ router.get("/users/:user_id",
     middlewareValidator.param("user_id").isMongoId().notEmpty(),
     middlewareInspector,
     async (req, res) => {
+        // Assign shortcuts
+        const userId = req.params.user_id;
+
         // Check user exists by the ID
-        const user = await User.findById(req.params.user_id).exec();
+        const user = await User.findById(userId).exec();
 
         // Send response
         if (user) {
@@ -103,22 +106,28 @@ router.post("/users/:user_id/roles",
     middlewareValidator.body("role_name").isString().notEmpty(),
     middlewareInspector,
     async (req, res) => {
+        // Assign shortcuts
+        const userId = req.params.user_id;
+        const roleName = req.body.role_name;
+
         // Check user exists by the ID
-        const user = await User.findById(req.params.user_id).exec();
+        const user = await User.findById(userId).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
 
-        // Update values
-        if (!Array.isArray(user?.roles)) {
-            user.roles = [req.body.role];
-        } else if (user.roles.includes(req.body.role)) {
+        // Check values
+        if (!Array.isArray(user.roles)) {
+            user.roles = [];
+        }
+        if (user.roles.includes(roleName)) {
             res.sendStatus(StatusCodes.CONFLICT);
             return;
-        } else {
-            user.roles.push(req.body.role);
         }
+
+        // Update values
+        user.roles = [...user.roles, roleName];
         await utilUser.saveData(user);
 
         // Send response
@@ -164,24 +173,28 @@ router.delete("/users/:user_id/roles/:role_name",
     middlewareValidator.param("role_name").isString().notEmpty(),
     middlewareInspector,
     async (req, res) => {
+        // Assign shortcuts
+        const userId = req.params.user_id;
+        const roleName = req.body.role_name;
+
         // Check user exists by the ID
-        const user = await User.findById(req.params.user_id).exec();
+        const user = await User.findById(userId).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
 
-        // Update values
-        if (
-            Array.isArray(user?.roles) &&
-            user.roles.includes(req.params.role_name)
-        ) {
-            const index = user.roles.indexOf(req.params.role_name);
-            user.roles.splice(index, 1);
-        } else {
+        // Check values
+        if (!Array.isArray(user.roles)) {
+            user.roles = [];
+        }
+        if (!user.roles.includes(roleName)) {
             res.sendStatus(StatusCodes.GONE);
             return;
         }
+
+        // Update values
+        user.roles = user.roles.filter((name) => name !== roleName);
         await utilUser.saveData(user);
 
         // Send response
