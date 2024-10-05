@@ -1,0 +1,12 @@
+{
+    "https://access.line.me/oauth2/v2.1": {
+        "client_id": "client_id",
+        "client_secret": "client_secret",
+        "redirect_uris": [
+            "http://localhost:3000/cb"
+        ],
+        "response_types": [
+            "id_token"
+        ]
+    }
+}

@@ -2,6 +2,7 @@
 
 const {getMust} = require("../config");
 const {StatusCodes} = require("http-status-codes");
+const {Issuer} = require("openid-client");
 const {useApp, express} = require("../init/express");
 const {useCache} = require("../init/cache");
 
@@ -104,7 +105,7 @@ router.post("/",
         res.
             status(StatusCodes.CREATED).
             send({
-                session_type: "token",
+                session_type: "native_access",
                 session_id: sessionId,
             });
     },
@@ -168,6 +169,86 @@ router.patch("/",
 
         // Check user exists by the email address
         const user = await User.findOne({email: metadata.email}).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Handle authentication
+        const userData = user.toObject();
+        const token = utilSaraToken.
+            issue(userData);
+
+        // Send response
+        res.
+            header("Sara-Issue", token).
+            sendStatus(StatusCodes.CREATED);
+    },
+);
+
+router.post("/oidc",
+    middlewareValidator.body("provider").isString(),
+    middlewareInspector,
+    middlewareRestrictor(10, 3600, false),
+    async (req, res) => {
+        // Handle code and metadata
+        const metadata = {issuer: req.body.issuer};
+        const {code, sessionId} = utilCodeSession.createOne(metadata, 5, 1800);
+
+        // Send response
+        res.
+            status(StatusCodes.CREATED).
+            send({
+                session_type: "oidc_access",
+                session_id: sessionId,
+                local_code: code,
+            });
+    },
+);
+
+router.patch("/oidc",
+    middlewareValidator.body("code").isString(),
+    middlewareValidator.body("session_id").isString(),
+    middlewareValidator.body("local_code").isString(),
+    middlewareInspector,
+    middlewareRestrictor(10, 3600, false),
+    async (req, res) => {
+        // Get metadata back by the local_code
+        const metadata = utilCodeSession.
+            getOne(req.body.session_id, req.body.local_code);
+
+        if (metadata === null) {
+            // Check metadata
+            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            return;
+        } else {
+            // Remove session
+            utilCodeSession.
+                deleteOne(req.body.session_id, req.body.local_code);
+        }
+
+        // Handle code and metadata
+        const issuerInstance = await Issuer.discover(metadata.issuer);
+        const openidClient = new issuerInstance.Client({
+            client_id: "client_id",
+            redirect_uris: ["http://localhost:3000/cb"],
+            response_types: ["id_token"],
+        });
+        const params = openidClient.callbackParams(req);
+        const tokenSet = await openidClient.callback(
+            "https://client.example.com/callback",
+            params,
+        );
+
+        // TODO: decode id_token
+        const subject = (tokenSet.id_token);
+
+        // Check user exists by the email address
+        const user = await User.findOne({
+            oidc: {
+                [metadata.issuer]: subject,
+            },
+        }).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
