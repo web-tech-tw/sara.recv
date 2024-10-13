@@ -2,36 +2,26 @@
 // Token utils of Sara.
 
 // Import config
-const {get, getMust} = require("../config");
-
-// Import createHash from crypto
-const {createHash} = require("node:crypto");
+const {getMust} = require("../config");
 
 // Import jsonwebtoken
 const {sign, verify} = require("jsonwebtoken");
 
 // Import useSecret
-const {useSecret} = require("../init/secret");
-
-// Define secret
-const secret = useSecret();
-
-// Define hash function - SHA256
-const sha256hex = (data) =>
-    createHash("sha256").update(data).digest("hex");
+const {usePublicKey, usePrivateKey} = require("../init/keypair");
 
 // Define issueOptions
 const issueOptions = {
-    algorithm: "HS256",
+    algorithm: "ES256",
     expiresIn: "1d",
     notBefore: "500ms",
+    issuer: getMust("SARA_ISSUER"),
     audience: getMust("SARA_AUDIENCE_URL"),
-    issuer: get("SARA_ISSUER") || sha256hex(secret),
     noTimestamp: false,
     mutatePayload: false,
     header: {
         sara: {
-            version: 2,
+            version: 3,
             type: "auth",
         },
     },
@@ -39,8 +29,8 @@ const issueOptions = {
 
 // Define validateOptions
 const validateOptions = {
-    algorithms: ["HS256"],
-    issuer: get("SARA_ISSUER") || sha256hex(secret),
+    algorithms: ["ES256"],
+    issuer: getMust("SARA_ISSUER"),
     audience: getMust("SARA_AUDIENCE_URL"),
     complete: true,
 };
@@ -51,8 +41,9 @@ const validateOptions = {
  * @return {string}
  */
 function issue(user) {
+    const privateKey = usePrivateKey();
     const payload = {user, sub: user._id};
-    return sign(payload, secret, issueOptions);
+    return sign(payload, privateKey, issueOptions);
 }
 
 /**
@@ -63,6 +54,7 @@ function issue(user) {
  * @return {object}
  */
 function validate(token) {
+    const publicKey = usePublicKey();
     const result = {
         userId: null,
         payload: null,
@@ -70,10 +62,12 @@ function validate(token) {
     };
 
     try {
-        const {header, payload} = verify(token, secret, validateOptions);
+        const {header, payload} = verify(
+            token, publicKey, validateOptions,
+        );
 
         if (
-            header?.sara?.version !== 2 ||
+            header?.sara?.version !== 3 ||
             header?.sara?.type !== "auth"
         ) {
             throw new Error("invalid sara token type");

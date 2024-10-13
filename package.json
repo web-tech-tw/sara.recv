@@ -7,7 +7,6 @@
   "main": "app.js",
   "scripts": {
     "export-openapi": "node export_openapi.js",
-    "new-secret": "node new_secret.js",
     "dev": "nodemon app.js",
     "start": "node app.js",
     "lint": "npx lint-staged",
