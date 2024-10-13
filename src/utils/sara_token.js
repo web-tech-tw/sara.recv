@@ -10,27 +10,24 @@ const {sign, verify} = require("jsonwebtoken");
 // Import usePublicKey and usePrivateKey
 const {usePublicKey, usePrivateKey} = require("../init/keypair");
 
+// Define Sara Token specs
+const issuerIdentity = "Sara Hoshikawa"; // The code of Sara v3
+
 // Define issueOptions
 const issueOptions = {
     algorithm: "ES256",
     expiresIn: "1d",
     notBefore: "500ms",
-    issuer: getMust("SARA_ISSUER"),
+    issuer: issuerIdentity,
     audience: getMust("SARA_AUDIENCE_URL"),
     noTimestamp: false,
     mutatePayload: false,
-    header: {
-        sara: {
-            version: 3,
-            type: "auth",
-        },
-    },
 };
 
 // Define validateOptions
 const validateOptions = {
     algorithms: ["ES256"],
-    issuer: getMust("SARA_ISSUER"),
+    issuer: issuerIdentity,
     audience: getMust("SARA_AUDIENCE_URL"),
     complete: true,
 };
@@ -62,16 +59,9 @@ function validate(token) {
     };
 
     try {
-        const {header, payload} = verify(
+        const {payload} = verify(
             token, publicKey, validateOptions,
         );
-
-        if (
-            header?.sara?.version !== 3 ||
-            header?.sara?.type !== "auth"
-        ) {
-            throw new Error("invalid sara token type");
-        }
 
         result.userId = payload.sub;
         result.payload = payload;
