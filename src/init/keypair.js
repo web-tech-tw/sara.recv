@@ -1,5 +1,5 @@
 "use strict";
-// Check the "secret.key" whether safe or not.
+// Reading curve keypair.
 
 // Import fs
 const {readFileSync} = require("node:fs");

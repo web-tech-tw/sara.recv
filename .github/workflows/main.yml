@@ -33,8 +33,10 @@ jobs:
       - name: Copy config from sample
         run: cp .env.sample .env
 
-      - name: Generate new secret
-        run: npm run new-secret
+      - name: Generate new keypair
+        run: |
+          openssl ecparam -name prime256v1 -genkey -noout -out "keypair_private.pem"
+          openssl ec -in "keypair_private.pem" -pubout -out "keypair_public.pem"
 
       - name: Install dependencies
         run: npm install

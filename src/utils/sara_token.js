@@ -7,7 +7,7 @@ const {getMust} = require("../config");
 // Import jsonwebtoken
 const {sign, verify} = require("jsonwebtoken");
 
-// Import useSecret
+// Import usePublicKey and usePrivateKey
 const {usePublicKey, usePrivateKey} = require("../init/keypair");
 
 // Define issueOptions
