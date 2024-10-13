@@ -23,3 +23,10 @@ npm run dev
 ```shell
 npm start
 ```
+
+## Keypair
+
+```sh
+openssl ecparam -name prime256v1 -genkey -noout -out "keypair_private.pem"
+openssl ec -in "keypair_private.pem" -pubout -out "keypair_public.pem"
+```
