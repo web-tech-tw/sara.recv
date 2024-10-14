@@ -84,7 +84,9 @@ function validate(token) {
         }
 
         result.userId = payload.sub;
-        result.payload = payload;
+        result.payload = {
+            profile: payload.user,
+        };
     } catch (e) {
         result.isAborted = true;
         result.payload = e;
