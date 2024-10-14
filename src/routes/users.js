@@ -105,9 +105,9 @@ router.put("/me",
             req.auth.metadata.profile.nickname;
 
         // Update values
-        const metadata = await utilUser.saveData(user);
+        const userData = await utilUser.saveData(user);
         const token = utilXaraToken.
-            issue(metadata);
+            update(req.auth.secret, userData);
 
         // Send response
         res.
@@ -272,7 +272,8 @@ router.patch("/me/email",
         const userData = utilUser.saveData(user);
 
         // Generate token
-        const token = utilXaraToken.issue(userData);
+        const token = utilXaraToken.
+            update(req.auth.secret, userData);
 
         // Send response
         res.
@@ -436,7 +437,8 @@ router.patch("/",
         const userData = await utilUser.saveData(user);
 
         // Generate token
-        const token = utilXaraToken.issue(userData);
+        const token = utilXaraToken.
+            issue(userData);
 
         // Send response
         res.

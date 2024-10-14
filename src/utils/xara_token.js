@@ -49,11 +49,41 @@ const validateOptions = {
  */
 function issue(user) {
     const privateKey = usePrivateKey();
-    const tokenId = ULID.ulid();
-    const payload = {user, sub: user._id, jti: tokenId};
+
+    const saraTokenId = ULID.ulid();
+    const saraTokenPayload = {user, sub: user._id, jti: saraTokenId};
+    const saraToken = sign(saraTokenPayload, privateKey, issueOptions);
+
     const guardSecret = getMust("SARA_GUARD_SECRET");
-    const guardToken = hmac256hex(tokenId, guardSecret);
-    return [sign(payload, privateKey, issueOptions), guardToken].join("|");
+    const guardToken = hmac256hex(saraTokenId, guardSecret);
+
+    return [saraToken, guardToken].join("|");
+}
+
+/**
+ * Update token
+ * @param {object} token - The token to update.
+ * @param {object} user - The user data to update.
+ * @return {string}
+ */
+function update(token, user) {
+    const publicKey = usePublicKey();
+    const privateKey = usePrivateKey();
+
+    const {payload: saraTokenPayload} = verify(
+        token, publicKey, validateOptions,
+    );
+    const saraTokenId = saraTokenPayload.jti;
+    saraTokenPayload.user = {
+        ...saraTokenPayload.user,
+        ...user,
+    };
+    const saraToken = sign(saraTokenPayload, privateKey, issueOptions);
+
+    const guardSecret = getMust("SARA_GUARD_SECRET");
+    const guardToken = hmac256hex(saraTokenId, guardSecret);
+
+    return [saraToken, guardToken].join("|");
 }
 
 /**
@@ -98,5 +128,6 @@ function validate(token) {
 // Export (object)
 module.exports = {
     issue,
+    update,
     validate,
 };
