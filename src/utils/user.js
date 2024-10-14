@@ -10,7 +10,8 @@ const {getPosixTimestamp} = require("../utils/native");
  */
 async function saveData(user) {
     user.updated_at = getPosixTimestamp();
-    return await user.save();
+    const newUser = await user.save();
+    return newUser.toObject();
 }
 
 module.exports = {saveData};
