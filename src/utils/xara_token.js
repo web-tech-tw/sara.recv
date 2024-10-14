@@ -70,18 +70,17 @@ function update(token, user) {
     const publicKey = usePublicKey();
     const privateKey = usePrivateKey();
 
+    const [originalSaraToken, guardToken] = token.split("|", 2);
     const {payload: saraTokenPayload} = verify(
-        token, publicKey, validateOptions,
+        originalSaraToken, publicKey, validateOptions,
     );
-    const saraTokenId = saraTokenPayload.jti;
     saraTokenPayload.user = {
         ...saraTokenPayload.user,
         ...user,
     };
-    const saraToken = sign(saraTokenPayload, privateKey, issueOptions);
-
-    const guardSecret = getMust("SARA_GUARD_SECRET");
-    const guardToken = hmac256hex(saraTokenId, guardSecret);
+    const saraToken = sign(
+        saraTokenPayload, privateKey, issueOptions,
+    );
 
     return [saraToken, guardToken].join("|");
 }
