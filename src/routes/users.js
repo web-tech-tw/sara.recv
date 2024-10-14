@@ -100,7 +100,7 @@ router.put("/me",
         }
 
         // Handle updates
-        user.nickname = req?.body?.nickname ||
+        user.nickname = req.body?.nickname ||
             req.auth.metadata.profile.nickname;
 
         // Update values
@@ -269,7 +269,7 @@ router.patch("/me/email",
         }
 
         // Handle updates
-        user.email = metadata.data.email;
+        user.email = metadata.email;
 
         // Update values
         const userData = utilUser.saveData(user);
