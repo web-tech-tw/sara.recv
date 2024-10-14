@@ -10,8 +10,8 @@ const {createHmac} = require("node:crypto");
 // Import jsonwebtoken
 const {sign, verify} = require("jsonwebtoken");
 
-// Import ULID
-const ULID = require("ulid");
+// Import nanoid
+const {nanoid: generateNanoId} = require("nanoid");
 
 // Import usePublicKey and usePrivateKey
 const {usePublicKey, usePrivateKey} = require("../init/keypair");
@@ -57,7 +57,7 @@ const validateOptions = {
 function issue(user) {
     const privateKey = usePrivateKey();
 
-    const saraTokenId = ULID.ulid();
+    const saraTokenId = generateNanoId();
     const saraTokenPayload = {user, sub: user._id, jti: saraTokenId};
     const saraToken = sign(saraTokenPayload, privateKey, issueOptions);
 
