@@ -79,7 +79,7 @@ router.get("/me",
  *       201:
  *         description: User profile updated successfully
  *         headers:
- *           Sara-Issue:
+ *           x-sara-refresh:
  *             description: Bearer token for the updated profile
  *             schema:
  *               type: string
@@ -107,9 +107,9 @@ router.put("/me",
             issue(metadata);
 
         // Send response
-        res
-            .header("Sara-Issue", token)
-            .sendStatus(StatusCodes.CREATED);
+        res.
+            header("x-sara-refresh", token).
+            sendStatus(StatusCodes.CREATED);
     },
 );
 
@@ -272,9 +272,9 @@ router.patch("/me/email",
         const token = utilSaraToken.issue(userData);
 
         // Send response
-        res
-            .header("Sara-Issue", token)
-            .sendStatus(StatusCodes.CREATED);
+        res.
+            header("x-sara-refresh", token).
+            sendStatus(StatusCodes.CREATED);
     },
 );
 
@@ -392,7 +392,7 @@ router.post("/",
  *     responses:
  *       '201':
  *         description: Returns a 201 status code with
- *                      a 'Sara-Issue' token in the header.
+ *                      a 'x-sara-refresh' token in the header.
  *       '401':
  *         description: Returns a 401 status code
  *                      if the provided code and session ID
@@ -437,7 +437,7 @@ router.patch("/",
 
         // Send response
         res.
-            header("Sara-Issue", token).
+            header("x-sara-refresh", token).
             sendStatus(StatusCodes.CREATED);
     },
 );
