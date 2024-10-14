@@ -1,7 +1,7 @@
 "use strict";
 
 module.exports = {
-    subject: (data) => `向 ${data.website} 上的Sara系統註冊帳號`,
+    subject: (data) => `註冊 ${data.website} 上的 Sara 系統帳號`,
     text: (data) => `
         您好，這裡是 ${data.website} 網站。
         使用者 ${data.name} 申請使用您的信箱 ${data.to} 進行註冊。
