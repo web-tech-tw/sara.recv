@@ -40,7 +40,7 @@ module.exports = (requiredRole) => (req, res, next) => {
     }
 
     // Read roles from metadata
-    const userRoles = req.auth.metadata?.user?.roles;
+    const userRoles = req.auth.metadata?.profile?.roles;
     const isUserRolesValid = Array.isArray(userRoles);
 
     // Check permission

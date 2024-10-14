@@ -52,7 +52,10 @@ const cache = useCache();
 router.get("/me",
     middlewareAccess(null),
     async (req, res) => {
-        res.send({profile: req.auth.metadata.user});
+        const {
+            profile,
+        } = req.auth.metadata;
+        res.send({profile});
     },
 );
 
@@ -99,7 +102,7 @@ router.put("/me",
         // Handle updates
         user.nickname =
             req?.body?.nickname ||
-            req.auth.metadata.user.nickname;
+            req.auth.metadata.profile.nickname;
 
         // Update values
         const metadata = await utilUser.saveData(user);
