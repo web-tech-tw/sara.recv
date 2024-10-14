@@ -80,8 +80,11 @@ router.post("/",
         }
 
         // Handle code and metadata
-        const metadata = {email: req.body.email};
-        const {code, sessionId} = utilCodeSession.createOne(metadata, 6, 1800);
+        const metadata = {
+            email: req.body.email,
+        };
+        const {code, sessionId} = utilCodeSession.
+            createOne(metadata, 6, 1800);
 
         // Handle mail
         try {

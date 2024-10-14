@@ -173,10 +173,11 @@ router.put("/me/email",
     async (req, res) => {
         // Handle code and metadata
         const metadata = {
-            _id: req.auth.id,
+            userId: req.auth.id,
             email: req.body.email,
         };
-        const {code, sessionId} = utilCodeSession.createOne(metadata, 8, 1800);
+        const {code, sessionId} = utilCodeSession.
+            createOne(metadata, 8, 1800);
 
         // Handle conflict
         if (await User.findOne({email: req.body.email}).exec()) {
@@ -261,6 +262,12 @@ router.patch("/me/email",
                 deleteOne(req.body.session_id, req.body.code);
         }
 
+        if (req.auth.id !== metadata.userId) {
+            // Check metadata
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            return;
+        }
+
         // Check user exists by the ID
         const user = await User.findById(req.auth.id).exec();
         if (!user) {
@@ -272,7 +279,7 @@ router.patch("/me/email",
         user.email = metadata.email;
 
         // Update values
-        const userData = utilUser.saveData(user);
+        const userData = await utilUser.saveData(user);
 
         // Generate token
         const token = utilXaraToken.
@@ -333,7 +340,8 @@ router.post("/",
             created_at: utilNative.getPosixTimestamp(),
             updated_at: utilNative.getPosixTimestamp(),
         };
-        const {code, sessionId} = utilCodeSession.createOne(metadata, 7, 1800);
+        const {code, sessionId} = utilCodeSession.
+            createOne(metadata, 7, 1800);
 
         // Handle mail
         try {
