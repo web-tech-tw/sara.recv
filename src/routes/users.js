@@ -9,7 +9,7 @@ const {useCache} = require("../init/cache");
 const User = require("../models/user");
 
 const utilMailSender = require("../utils/mail_sender");
-const utilSaraToken = require("../utils/sara_token");
+const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilVisitor = require("../utils/visitor");
 const utilUser = require("../utils/user");
@@ -103,7 +103,7 @@ router.put("/me",
 
         // Update values
         const metadata = await utilUser.saveData(user);
-        const token = utilSaraToken.
+        const token = utilXaraToken.
             issue(metadata);
 
         // Send response
@@ -269,7 +269,7 @@ router.patch("/me/email",
         const userData = utilUser.saveData(user);
 
         // Generate token
-        const token = utilSaraToken.issue(userData);
+        const token = utilXaraToken.issue(userData);
 
         // Send response
         res.
@@ -433,7 +433,7 @@ router.patch("/",
         const userData = await utilUser.saveData(user);
 
         // Generate token
-        const token = utilSaraToken.issue(userData);
+        const token = utilXaraToken.issue(userData);
 
         // Send response
         res.
