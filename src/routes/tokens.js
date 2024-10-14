@@ -82,7 +82,7 @@ router.post("/",
 
         // Handle code and metadata
         const metadata = {
-            userId: user._id,
+            userId: user._id.toString(),
             email: req.body.email,
         };
         const {code, sessionId} = utilCodeSession.
@@ -181,7 +181,7 @@ router.patch("/",
         }
 
         // Check metadata user id
-        if (user._id !== metadata.userId) {
+        if (user._id.toString() !== metadata.userId) {
             res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         }
