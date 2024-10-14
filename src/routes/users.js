@@ -188,9 +188,12 @@ router.put("/me/email",
         // Handle mail
         try {
             await utilMailSender("update_email", {
+                name: req.auth.metadata?.profile?.name,
+                origin: req.auth.metadata?.profile?.email,
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
                 ip_address: utilVisitor.getIPAddress(req),
+                session_id: sessionId,
                 code,
             });
             if (getMust("NODE_ENV") === "testing") {
@@ -346,9 +349,11 @@ router.post("/",
         // Handle mail
         try {
             await utilMailSender("create_user", {
+                name: metadata.nickname,
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
                 ip_address: utilVisitor.getIPAddress(req),
+                session_id: sessionId,
                 code,
             });
             if (getMust("NODE_ENV") === "testing") {

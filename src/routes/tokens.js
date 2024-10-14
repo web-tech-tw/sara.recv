@@ -74,13 +74,15 @@ router.post("/",
     middlewareRestrictor(10, 3600, false),
     async (req, res) => {
         // Check user exists by the email address
-        if (!(await User.findOne({email: req.body.email}).exec())) {
+        const user = await User.findOne({email: req.body.email}).exec();
+        if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
 
         // Handle code and metadata
         const metadata = {
+            userId: user._id,
             email: req.body.email,
         };
         const {code, sessionId} = utilCodeSession.
@@ -89,9 +91,11 @@ router.post("/",
         // Handle mail
         try {
             await utilMailSender("create_token", {
+                name: user.nickname,
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
                 ip_address: utilVisitor.getIPAddress(req),
+                session_id: sessionId,
                 code,
             });
             if (getMust("NODE_ENV") === "testing") {
@@ -173,6 +177,12 @@ router.patch("/",
         const user = await User.findOne({email: metadata.email}).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Check metadata user id
+        if (user._id !== metadata.userId) {
+            res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         }
 
