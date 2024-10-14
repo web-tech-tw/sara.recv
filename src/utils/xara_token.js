@@ -34,6 +34,13 @@ const issueOptions = {
     mutatePayload: false,
 };
 
+// Define updateOptions
+const updateOptions = {
+    algorithm: "ES256",
+    noTimestamp: false,
+    mutatePayload: false,
+};
+
 // Define validateOptions
 const validateOptions = {
     algorithms: ["ES256"],
@@ -79,7 +86,7 @@ function update(token, user) {
         ...user,
     };
     const saraToken = sign(
-        saraTokenPayload, privateKey, issueOptions,
+        saraTokenPayload, privateKey, updateOptions,
     );
 
     return [saraToken, guardToken].join("|");
