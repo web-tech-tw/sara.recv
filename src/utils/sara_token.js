@@ -7,6 +7,9 @@ const {getMust} = require("../config");
 // Import jsonwebtoken
 const {sign, verify} = require("jsonwebtoken");
 
+// Import ULID
+const ULID = require("ulid");
+
 // Import usePublicKey and usePrivateKey
 const {usePublicKey, usePrivateKey} = require("../init/keypair");
 
@@ -39,7 +42,8 @@ const validateOptions = {
  */
 function issue(user) {
     const privateKey = usePrivateKey();
-    const payload = {user, sub: user._id};
+    const tokenId = ULID.ulid();
+    const payload = {user, sub: user._id, jti: tokenId};
     return sign(payload, privateKey, issueOptions);
 }
 
