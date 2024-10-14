@@ -30,9 +30,9 @@ module.exports = (requiredRole) => (req, res, next) => {
         return;
     }
 
-    // Accept SARA or TEST only
+    // Accept XARA or TEST only
     if (
-        req.auth.method !== "SARA" &&
+        req.auth.method !== "XARA" &&
         !(req.auth.method === "TEST" && !isProduction())
     ) {
         res.sendStatus(StatusCodes.METHOD_NOT_ALLOWED);

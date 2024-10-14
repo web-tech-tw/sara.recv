@@ -8,7 +8,7 @@ const {useCache} = require("../init/cache");
 const User = require("../models/user");
 
 const utilMailSender = require("../utils/mail_sender");
-const utilSaraToken = require("../utils/sara_token");
+const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilVisitor = require("../utils/visitor");
 
@@ -138,7 +138,7 @@ router.post("/",
  *     responses:
  *       201:
  *         description: Returns a header named
- *                      "Sara-Issue" that contains the access token.
+ *                      "x-sara-refresh" that contains the access token.
  *       401:
  *         description: Returns "Unauthorized"
  *                      if the user's identity cannot be verified.
@@ -175,12 +175,12 @@ router.patch("/",
 
         // Handle authentication
         const userData = user.toObject();
-        const token = utilSaraToken.
+        const token = utilXaraToken.
             issue(userData);
 
         // Send response
         res.
-            header("Sara-Issue", token).
+            header("x-sara-refresh", token).
             sendStatus(StatusCodes.CREATED);
     },
 );

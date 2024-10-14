@@ -4,6 +4,9 @@
 // Import config
 const {getMust} = require("../config");
 
+// Import createHmac from crypto
+const {createHmac} = require("node:crypto");
+
 // Import jsonwebtoken
 const {sign, verify} = require("jsonwebtoken");
 
@@ -12,6 +15,10 @@ const ULID = require("ulid");
 
 // Import usePublicKey and usePrivateKey
 const {usePublicKey, usePrivateKey} = require("../init/keypair");
+
+// Define hmac function - SHA256
+const hmac256hex = (data, key) =>
+    createHmac("sha256", key).update(data).digest("hex");
 
 // Define Sara Token specs
 const issuerIdentity = "Sara Hoshikawa"; // The code of Sara v3
@@ -44,7 +51,9 @@ function issue(user) {
     const privateKey = usePrivateKey();
     const tokenId = ULID.ulid();
     const payload = {user, sub: user._id, jti: tokenId};
-    return sign(payload, privateKey, issueOptions);
+    const guardSecret = getMust("SARA_GUARD_SECRET");
+    const guardToken = hmac256hex(tokenId, guardSecret);
+    return [sign(payload, privateKey, issueOptions), guardToken].join("|");
 }
 
 /**
@@ -63,9 +72,16 @@ function validate(token) {
     };
 
     try {
+        const [saraToken, guardToken] = token.split("|", 2);
         const {payload} = verify(
-            token, publicKey, validateOptions,
+            saraToken, publicKey, validateOptions,
         );
+
+        const guardSecret = getMust("SARA_GUARD_SECRET");
+        const guardTokenExpected = hmac256hex(payload.jti, guardSecret);
+        if (guardToken !== guardTokenExpected) {
+            throw new Error("unexpect guard token");
+        }
 
         result.userId = payload.sub;
         result.payload = payload;

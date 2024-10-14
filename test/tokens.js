@@ -64,7 +64,7 @@ describe("/tokens", function() {
             .expect("Content-Type", /plain/)
             .expect(StatusCodes.CREATED)
             .then((res) => {
-                utils.log("sara-issue", res.headers["sara-issue"]);
+                utils.log("x-sara-refresh", res.headers["x-sara-refresh"]);
                 done();
             })
             .catch((e) => {
