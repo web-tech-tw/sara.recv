@@ -38,9 +38,22 @@ function generateRandomCode(length) {
         padStart(length, "0");
 }
 
+/**
+ * Hash string into sha256 hex.
+ * @param {string} data
+ * @return {string}
+ */
+function sha256hex(data) {
+    return crypto.
+        createHash("sha256").
+        update(data).
+        digest("hex");
+}
+
 // Export (object)
 module.exports = {
     getPosixTimestamp,
     isObjectPropExists,
     generateRandomCode,
+    sha256hex,
 };

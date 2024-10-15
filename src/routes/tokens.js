@@ -11,6 +11,7 @@ const utilMailSender = require("../utils/mail_sender");
 const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilVisitor = require("../utils/visitor");
+const utilNative = require("../utils/native");
 
 const middlewareInspector = require("../middleware/inspector");
 const middlewareValidator = require("express-validator");
@@ -186,8 +187,15 @@ router.patch("/",
             return;
         }
 
-        // Handle authentication
+        // Handle conversion
         const userData = user.toObject();
+
+        // Handle avatar
+        const avatarRaw = userData.email.toLowerCase();
+        const avatarHash = utilNative.sha256hex(avatarRaw);
+        userData.avatar_hash = avatarHash;
+
+        // Generate token
         const token = utilXaraToken.
             issue(userData);
 

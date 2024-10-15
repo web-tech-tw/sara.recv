@@ -52,9 +52,12 @@ const cache = useCache();
 router.get("/me",
     middlewareAccess(null),
     async (req, res) => {
-        const {
-            profile,
-        } = req.auth.metadata;
+        const {profile} = req.auth.metadata;
+
+        const avatarRaw = profile.email.toLowerCase();
+        const avatarHash = utilNative.sha256hex(avatarRaw);
+        profile.avatar_hash = avatarHash;
+
         res.send({profile});
     },
 );
@@ -338,9 +341,14 @@ router.get("/:user_id",
 
         // Send response
         const userData = user.toObject();
+
+        const avatarRaw = userData.email.toLowerCase();
+        const avatarHash = utilNative.sha256hex(avatarRaw);
+
         res.send({
             profile: {
                 nickname: userData.nickname,
+                avatar_hash: avatarHash,
             },
         });
     },
@@ -502,6 +510,11 @@ router.patch("/",
         // Handle creation
         const user = new User(metadata);
         const userData = await utilUser.saveData(user);
+
+        // Handle avatar
+        const avatarRaw = userData.email.toLowerCase();
+        const avatarHash = utilNative.sha256hex(avatarRaw);
+        userData.avatar_hash = avatarHash;
 
         // Generate token
         const token = utilXaraToken.
