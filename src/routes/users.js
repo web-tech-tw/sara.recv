@@ -321,7 +321,7 @@ router.patch("/me/email",
  *       401:
  *         description: User not found
  */
-router.get("/users/:user_id",
+router.get("/:user_id",
     middlewareValidator.param("user_id").isMongoId().notEmpty(),
     middlewareInspector,
     middlewareRestrictor(10, 60, true),
