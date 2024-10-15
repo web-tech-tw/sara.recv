@@ -98,6 +98,7 @@ router.post("/",
         try {
             await utilMailSender("create_token", {
                 name: user.nickname,
+                id: user._id,
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
                 session_ip: sessionIp,

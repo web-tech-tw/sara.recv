@@ -198,6 +198,7 @@ router.put("/me/email",
             await utilMailSender("update_email", {
                 name: req.auth.metadata?.profile?.nickname,
                 origin: req.auth.metadata?.profile?.email,
+                id: req.auth.id,
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
                 session_ip: sessionIp,

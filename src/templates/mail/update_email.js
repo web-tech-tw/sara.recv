@@ -7,13 +7,20 @@ module.exports = {
         使用者 ${data.name} 請求將帳號自 ${data.origin} 轉移到您的信箱 ${data.to} 上。
         
         這裡是您的轉移代碼：
-        ${data.code}
+            ${data.code}
 
         這份請求來自於：
-            申請時間：${data.session_tm}
-            申請識別碼：${data.session_id}
-            申請來源裝置：${data.session_ua}
-            申請來源 IP 位址：${data.session_ip}
+            申請時間：
+                ${data.session_tm}
+            申請識別碼：
+                ${data.session_id}
+            申請來源裝置：
+                ${data.session_ua}
+            申請來源 IP 位址：
+                ${data.session_ip}
+
+        Sara 系統使用者識別碼：
+            ${data.id}
 
         若您未曾請求過該代碼，請您無視本電子郵件。
         
@@ -32,11 +39,27 @@ module.exports = {
         <p>
             這份請求來自於：
             <ul>
-                <li>申請時間：${data.session_tm}</li>
-                <li>申請識別碼：${data.session_id}</li>
-                <li>申請來源裝置：${data.session_ua}</li>
-                <li>申請來源 IP 位址：${data.session_ip}</li>
+                <li>
+                    申請時間：<br/>
+                    ${data.session_tm}
+                </li>
+                <li>
+                    申請識別碼：<br/>
+                    ${data.session_id}
+                </li>
+                <li>
+                    申請來源裝置：<br/>
+                    ${data.session_ua}
+                </li>
+                <li>
+                    申請來源 IP 位址：<br/>
+                    ${data.session_ip}
+                </li>
             </ul>
+        </p>
+        <p>
+            Sara 系統使用者識別碼：<br/>
+            ${data.id}
         </p>
         <p>
             若您未曾請求過該代碼，請您無視本電子郵件。
