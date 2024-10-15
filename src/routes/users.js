@@ -302,9 +302,7 @@ router.patch("/me/email",
  *     summary: Get user by ID
  *     description: Get user public profile by ID
  *     tags:
- *       - admin
- *     security:
- *       - ApiKeyAuth: []
+ *       - users
  *     parameters:
  *       - name: user_id
  *         in: path
