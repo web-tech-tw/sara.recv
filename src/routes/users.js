@@ -297,6 +297,59 @@ router.patch("/me/email",
 
 /**
  * @openapi
+ * /users/{user_id}:
+ *   get:
+ *     summary: Get user by ID
+ *     description: Get user public profile by ID
+ *     tags:
+ *       - admin
+ *     security:
+ *       - ApiKeyAuth: []
+ *     parameters:
+ *       - name: user_id
+ *         in: path
+ *         description: ID of the user to retrieve
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: objectId
+ *     responses:
+ *       200:
+ *         description: User public profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: User not found
+ */
+router.get("/users/:user_id",
+    middlewareValidator.param("user_id").isMongoId().notEmpty(),
+    middlewareInspector,
+    middlewareRestrictor(10, 60, true),
+    async (req, res) => {
+        // Assign shortcuts
+        const userId = req.params.user_id;
+
+        // Check user exists by the ID
+        const user = await User.findById(userId).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            return;
+        }
+
+        // Send response
+        const userData = user.toObject();
+        res.send({
+            profile: {
+                nickname: userData.nickname,
+            },
+        });
+    },
+);
+
+/**
+ * @openapi
  * /users:
  *   post:
  *     tags:

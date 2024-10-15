@@ -55,13 +55,14 @@ router.get("/users/:user_id",
 
         // Check user exists by the ID
         const user = await User.findById(userId).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
 
         // Send response
-        if (user) {
-            res.send(user);
-        } else {
-            res.sendStatus(StatusCodes.NOT_FOUND);
-        }
+        const userData = user.toObject();
+        res.send(userData);
     },
 );
 
