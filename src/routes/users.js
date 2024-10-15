@@ -320,7 +320,10 @@ router.patch("/me/email",
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 profile:
+ *                   $ref: '#/components/schemas/User'
  *       401:
  *         description: User not found
  */
