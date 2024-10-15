@@ -21,7 +21,6 @@ const isTestMailAddress = (addr) =>
     addr.endsWith("@" + constant.TEST_EMAIL_DOMAIN);
 
 module.exports = function(template, data) {
-    data.timestamp = new Date().toISOString();
     if (isTestMailAddress(data.to)) {
         return new Promise((resolve) => {
             if (getMust("NODE_ENV") === "development") {

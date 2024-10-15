@@ -188,6 +188,11 @@ router.put("/me/email",
             return;
         }
 
+        // Fetch session details
+        const sessionIp = utilVisitor.getIPAddress(req);
+        const sessionUa = utilVisitor.getUserAgent(req, true);
+        const sessionTm = new Date().toISOString();
+
         // Handle mail
         try {
             await utilMailSender("update_email", {
@@ -195,8 +200,10 @@ router.put("/me/email",
                 origin: req.auth.metadata?.profile?.email,
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
-                ip_address: utilVisitor.getIPAddress(req),
+                session_ip: sessionIp,
                 session_id: sessionId,
+                session_ua: sessionUa,
+                session_tm: sessionTm,
                 code,
             });
             if (getMust("NODE_ENV") === "testing") {
@@ -211,7 +218,10 @@ router.put("/me/email",
         // Send response
         res.send({
             session_type: "update_email",
+            session_ip: sessionIp,
             session_id: sessionId,
+            session_ua: sessionUa,
+            session_tm: sessionTm,
         });
     },
 );
@@ -408,14 +418,21 @@ router.post("/",
         const {code, sessionId} = utilCodeSession.
             createOne(metadata, 7, 1800);
 
+        // Fetch session details
+        const sessionIp = utilVisitor.getIPAddress(req);
+        const sessionUa = utilVisitor.getUserAgent(req, true);
+        const sessionTm = new Date().toISOString();
+
         // Handle mail
         try {
             await utilMailSender("create_user", {
                 name: metadata.nickname,
                 to: req.body.email,
                 website: getMust("SARA_AUDIENCE_URL"),
-                ip_address: utilVisitor.getIPAddress(req),
+                session_ip: sessionIp,
                 session_id: sessionId,
+                session_ua: sessionUa,
+                session_tm: sessionTm,
                 code,
             });
             if (getMust("NODE_ENV") === "testing") {
@@ -438,7 +455,10 @@ router.post("/",
             status(StatusCodes.CREATED).
             send({
                 session_type: "user",
+                session_ip: sessionIp,
                 session_id: sessionId,
+                session_ua: sessionUa,
+                session_tm: sessionTm,
             });
     },
 );

@@ -9,11 +9,13 @@ module.exports = {
         這裡是您的登入代碼：
         ${data.code}
 
-        這份請求來自於 IP 位址：
-        ${data.ip_address}
+        這份請求來自於：
+            申請時間：${data.session_tm}
+            申請識別碼：${data.session_id}
+            申請來源裝置：${data.session_ua}
+            申請來源 IP 位址：${data.session_ip}
 
         若您未曾請求過該代碼，請您無視本電子郵件。
-        ${data.session_id} (${data.timestamp})
         
         「Sara系統」是一個開放原始碼的無密碼式身份認證解決方案，
         由臺灣網際網路技術推廣組織（https://web-tech.tw）提供技術支援。
@@ -28,12 +30,16 @@ module.exports = {
             <code>${data.code}</code>
         </p>
         <p>
-            這份請求來自於 IP 位址：<br/>
-            ${data.ip_address}
+            這份請求來自於：
+            <p>
+                申請時間：${data.session_tm}
+                申請識別碼：${data.session_id}
+                申請來源裝置：${data.session_ua}
+                申請來源 IP 位址：${data.session_ip}
+            </p>
         </p>
         <p>
-            若您未曾請求過該代碼，請您無視本電子郵件。<br/>
-            ${data.session_id} (${data.timestamp})
+            若您未曾請求過該代碼，請您無視本電子郵件。
         </p>
         <p>
             「Sara系統」是一個開放原始碼的無密碼式身份認證解決方案，由
