@@ -31,12 +31,12 @@ module.exports = {
         </p>
         <p>
             這份請求來自於：
-            <p>
-                申請時間：${data.session_tm}
-                申請識別碼：${data.session_id}
-                申請來源裝置：${data.session_ua}
-                申請來源 IP 位址：${data.session_ip}
-            </p>
+            <ul>
+                <li>申請時間：${data.session_tm}</li>
+                <li>申請識別碼：${data.session_id}</li>
+                <li>申請來源裝置：${data.session_ua}</li>
+                <li>申請來源 IP 位址：${data.session_ip}</li>
+            </ul>
         </p>
         <p>
             若您未曾請求過該代碼，請您無視本電子郵件。
