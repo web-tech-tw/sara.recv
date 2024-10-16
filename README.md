@@ -1,30 +1,38 @@
-# sara.recv
+# Sara RECV
 
-無密碼式身分認證系統。
+[網頁客戶端](https://github.com/web-tech-tw/sara) | 伺服器端
 
-A passwordless authentication system.
+關於系統介紹、或想了解本系統資訊，請前往[這裡](https://github.com/web-tech-tw/sara)。
 
-[應用程式介面/API]
+## 伺服器腳本
 
-## Testing
+### 自動化測試
 
 ```shell
 npm run test
 ```
 
-## Development
+### 開發除錯模式
 
 ```shell
 npm run dev
 ```
 
-## Production
+### 正式產品模式
 
 ```shell
 npm start
 ```
 
-## Keypair
+## 金鑰腳本
+
+### 生成安全金鑰
+
+```sh
+openssl rand -base64 36
+```
+
+### 生成憑證公鑰與私鑰
 
 ```sh
 openssl ecparam -name prime256v1 -genkey -noout -out "keypair_private.pem"
