@@ -30,8 +30,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Copy config from sample
-        run: cp .env.sample .env
+      - name: Copy and edit config from sample
+        run: |
+          cp .env.sample .env
+          sed -i "s/local-mongo/127.0.0.1/g" .env
 
       - name: Generate new keypair
         run: |
