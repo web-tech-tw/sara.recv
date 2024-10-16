@@ -172,7 +172,7 @@ router.put("/me/email",
     middlewareAccess(null),
     middlewareValidator.body("email").isEmail().notEmpty(),
     middlewareInspector,
-    middlewareRestrictor(10, 60, false),
+    middlewareRestrictor(10, 60, false, StatusCodes.CONFLICT),
     async (req, res) => {
         // Handle code and metadata
         const metadata = {
@@ -341,7 +341,7 @@ router.patch("/me/email",
 router.get("/:user_id",
     middlewareValidator.param("user_id").isMongoId().notEmpty(),
     middlewareInspector,
-    middlewareRestrictor(10, 60, true),
+    middlewareRestrictor(10, 60, true, StatusCodes.NOT_FOUND),
     async (req, res) => {
         // Assign shortcuts
         const userId = req.params.user_id;
@@ -349,7 +349,7 @@ router.get("/:user_id",
         // Check user exists by the ID
         const user = await User.findById(userId).exec();
         if (!user) {
-            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
 
@@ -407,7 +407,7 @@ router.post("/",
     middlewareValidator.body("nickname").notEmpty(),
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
-    middlewareRestrictor(20, 3600, false),
+    middlewareRestrictor(20, 3600, false, StatusCodes.CONFLICT),
     async (req, res) => {
         // Handle code and metadata
         const metadata = {

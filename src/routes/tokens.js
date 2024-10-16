@@ -72,7 +72,7 @@ const cache = useCache();
 router.post("/",
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
-    middlewareRestrictor(10, 3600, false),
+    middlewareRestrictor(10, 3600, false, StatusCodes.NOT_FOUND),
     async (req, res) => {
         // Check user exists by the email address
         const user = await User.findOne({email: req.body.email}).exec();
