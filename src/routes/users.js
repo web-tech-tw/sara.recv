@@ -413,8 +413,8 @@ router.post("/",
         const metadata = {
             nickname: req.body.nickname,
             email: req.body.email,
-            created_at: utilNative.getPosixTimestamp(),
-            updated_at: utilNative.getPosixTimestamp(),
+            created_at: Date.now(),
+            updated_at: Date.now(),
         };
         const {code, sessionId} = utilCodeSession.
             createOne(metadata, 7, 1800);
