@@ -89,6 +89,8 @@ router.get("/me",
  *             description: Bearer token for the updated profile
  *             schema:
  *               type: string
+ *       403:
+ *         description: Reserved words are not allowed
  *       404:
  *         description: User not found
  */
@@ -105,6 +107,12 @@ router.put("/me",
         // Handle updates
         user.nickname = req.body?.nickname ||
             req.auth.metadata.profile.nickname;
+
+        // Check reserved words
+        if (user.nickname === "Sara Hoshikawa") {
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            return;
+        }
 
         // Update values
         const userData = await utilUser.saveData(user);
@@ -335,7 +343,7 @@ router.patch("/me/email",
  *               properties:
  *                 profile:
  *                   $ref: '#/components/schemas/User'
- *       401:
+ *       404:
  *         description: User not found
  */
 router.get("/:user_id",
@@ -399,6 +407,8 @@ router.get("/:user_id",
  *                      if the user is registered successfully.
  *       400:
  *         description: Returns an error message if the request is invalid.
+ *       403:
+ *         description: Reserved words are not allowed.
  *       409:
  *         description: Returns an error message
  *                      if the user's email already exists in the system.
@@ -418,6 +428,12 @@ router.post("/",
         };
         const {code, sessionId} = utilCodeSession.
             createOne(metadata, 7, 1800);
+
+        // Check reserved words
+        if (metadata.nickname === "Sara Hoshikawa") {
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            return;
+        }
 
         // Fetch session details
         const sessionIp = utilVisitor.getIPAddress(req);
