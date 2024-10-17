@@ -130,6 +130,51 @@ router.put("/me",
 
 /**
  * @openapi
+ * /users/me:
+ *   delete:
+ *     summary: Delete user profile
+ *     description: Deletes the authenticated user's profile. (soft delete)
+ *     tags:
+ *       - users
+ *     security:
+ *       - ApiKeyAuth: []
+ *     responses:
+ *       204:
+ *         description: User profile deleted successfully
+ *         headers:
+ *           x-sara-refresh:
+ *             description: Use a character to empty the token
+ *             schema:
+ *               type: string
+ *       404:
+ *         description: User not found
+ */
+router.delete("/me",
+    middlewareAccess(null),
+    async (req, res) => {
+        // Check user exists by the ID
+        const user = await User.findById(req.auth.id).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Handle updates
+        user.nickname = "Sara Hoshikawa";
+        user.email = new Date().toISOString();
+
+        // Update values
+        await utilUser.saveData(user);
+
+        // Send response
+        res.
+            header("x-sara-refresh", "|").
+            sendStatus(StatusCodes.NO_CONTENT);
+    },
+);
+
+/**
+ * @openapi
  * /users/me/email:
  *   put:
  *     summary: Update user's email
