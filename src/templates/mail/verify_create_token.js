@@ -34,7 +34,7 @@ module.exports = {
         </p>
         <p>
             這裡是您的登入代碼：<br/>
-            <code>${data.code}</code>
+            <font size="5">${data.code}</font>
         </p>
         <p>
             這份請求來自於：
