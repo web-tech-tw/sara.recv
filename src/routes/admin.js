@@ -22,7 +22,7 @@ router.use(express.json());
  * /admin/users/{user_id}:
  *   get:
  *     summary: Get user by ID
- *     description: Get user information by ID
+ *     description: Get user information by user ID.
  *     tags:
  *       - admin
  *     security:
@@ -71,7 +71,7 @@ router.get("/users/:user_id",
  * /admin/users/{user_id}/roles:
  *   post:
  *     summary: Add role to user
- *     description: Add a role to a user by ID
+ *     description: Add a role to a user by user ID.
  *     tags:
  *       - admin
  *     security:
@@ -141,7 +141,7 @@ router.post("/users/:user_id/roles",
  * /admin/users/{user_id}/roles/{role_name}:
  *   delete:
  *     summary: Remove role from user
- *     description: Remove a role from a user by ID
+ *     description: Remove a role from a user by user ID.
  *     tags:
  *       - admin
  *     security:

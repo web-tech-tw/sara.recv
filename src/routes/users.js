@@ -178,6 +178,9 @@ router.delete("/me",
  * /users/me/email:
  *   put:
  *     summary: Update user's email
+ *     description: Updates the authenticated user's email.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
  *     tags:
  *       - users
  *     security:
@@ -285,6 +288,9 @@ router.put("/me/email",
  * /users/me/email:
  *   patch:
  *     summary: Update user email by verification code.
+ *     description: Update the authenticated user's email by verification code.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
  *     tags:
  *       - users
  *     security:
@@ -368,6 +374,8 @@ router.patch("/me/email",
  *   get:
  *     summary: Get user by ID
  *     description: Get user public profile by ID
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
  *     tags:
  *       - users
  *     parameters:
@@ -428,7 +436,9 @@ router.get("/:user_id",
  *     tags:
  *       - users
  *     summary: Register a user
- *     description: Endpoint to register a user
+ *     description: This API endpoint registers a new user.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
  *     requestBody:
  *       required: true
  *       content:

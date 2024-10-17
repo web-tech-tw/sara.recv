@@ -35,6 +35,8 @@ const cache = useCache();
  *     description: Issues a token session for a user
  *                  by sending an email with a code.
  *                  The user can use the code to verify their identity later.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
  *     requestBody:
  *       required: true
  *       content:
@@ -140,6 +142,8 @@ router.post("/",
  *                  code that the user provides.
  *                  If the session_id and code are valid,
  *                  the server issues an access token.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
  *     requestBody:
  *       required: true
  *       content:
