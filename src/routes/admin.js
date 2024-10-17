@@ -60,8 +60,10 @@ router.get("/users/:user_id",
             return;
         }
 
-        // Send response
+        // Handle conversion
         const userData = user.toObject();
+
+        // Send response
         res.send(userData);
     },
 );

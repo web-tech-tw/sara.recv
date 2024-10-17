@@ -91,22 +91,32 @@ router.post("/",
         const {code, sessionId} = utilCodeSession.
             createOne(metadata, 6, 1800);
 
-        // Fetch session details
-        const sessionIp = utilVisitor.getIPAddress(req);
-        const sessionUa = utilVisitor.getUserAgent(req, true);
-        const sessionTm = new Date().toISOString();
+        // Handle conversion
+        const userData = user.toObject();
 
-        // Handle mail
+        // Fetch email variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+
+        const userId = userData._id;
+        const userNickname = userData.nickname;
+        const userEmail = userData.email;
+
+        const sessionTm = new Date().toISOString();
+        const sessionUa = utilVisitor.getUserAgent(req, true);
+        const sessionIp = utilVisitor.getIPAddress(req);
+
+        // Send email
         try {
-            await utilMailSender("create_token", {
-                name: user.nickname,
-                id: user._id,
-                to: req.body.email,
-                website: getMust("SARA_AUDIENCE_URL"),
-                session_ip: sessionIp,
-                session_id: sessionId,
-                session_ua: sessionUa,
-                session_tm: sessionTm,
+            await utilMailSender("verify_create_token", {
+                to: userEmail,
+                audienceUrl,
+                userId,
+                userNickname,
+                userEmail,
+                sessionIp,
+                sessionId,
+                sessionUa,
+                sessionTm,
                 code,
             });
             if (getMust("NODE_ENV") === "testing") {
@@ -218,6 +228,37 @@ router.patch("/",
         res.
             header("x-sara-refresh", token).
             sendStatus(StatusCodes.CREATED);
+
+        // Fetch email variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+
+        const userId = userData._id;
+        const userNickname = userData.nickname;
+        const userEmail = userData.email;
+
+        const sessionId = req.body.session_id;
+        const accessTm = new Date().toISOString();
+        const accessUa = utilVisitor.getUserAgent(req, true);
+        const accessIp = utilVisitor.getIPAddress(req);
+
+        // Send email
+        try {
+            await utilMailSender("notify_create_token", {
+                to: userEmail,
+                audienceUrl,
+                userId,
+                userNickname,
+                userEmail,
+                sessionId,
+                accessTm,
+                accessUa,
+                accessIp,
+            });
+        } catch (e) {
+            console.error(e);
+            res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
+            return;
+        }
     },
 );
 

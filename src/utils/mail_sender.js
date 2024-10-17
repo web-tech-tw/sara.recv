@@ -34,6 +34,7 @@ module.exports = function(template, data) {
     return transporter.sendMail({
         from: getMust("MAIL_SMTP_FROM"),
         to: data.to,
+        cc: data.cc,
         subject: subject(data),
         text: text(data),
         html: html(data),

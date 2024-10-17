@@ -114,7 +114,7 @@ router.put("/me",
             return;
         }
 
-        // Update values
+        // Save user data
         const userData = await utilUser.saveData(user);
 
         // Generate token
@@ -244,23 +244,33 @@ router.put("/me/email",
             return;
         }
 
-        // Fetch session details
-        const sessionIp = utilVisitor.getIPAddress(req);
-        const sessionUa = utilVisitor.getUserAgent(req, true);
-        const sessionTm = new Date().toISOString();
+        // Fetch email variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
 
-        // Handle mail
+        const {profile: userData} = req.auth.metadata;
+
+        const userId = userData._id;
+        const userNickname = userData.nickname;
+        const userEmailOriginal = userData.email;
+        const userEmailUpdated = metadata.email;
+
+        const sessionTm = new Date().toISOString();
+        const sessionUa = utilVisitor.getUserAgent(req, true);
+        const sessionIp = utilVisitor.getIPAddress(req);
+
+        // Send email
         try {
-            await utilMailSender("update_email", {
-                name: req.auth.metadata?.profile?.nickname,
-                origin: req.auth.metadata?.profile?.email,
-                id: req.auth.id,
-                to: req.body.email,
-                website: getMust("SARA_AUDIENCE_URL"),
-                session_ip: sessionIp,
-                session_id: sessionId,
-                session_ua: sessionUa,
-                session_tm: sessionTm,
+            await utilMailSender("verify_update_email", {
+                to: userEmailUpdated,
+                audienceUrl,
+                userId,
+                userNickname,
+                userEmailOriginal,
+                userEmailUpdated,
+                sessionIp,
+                sessionId,
+                sessionUa,
+                sessionTm,
                 code,
             });
             if (getMust("NODE_ENV") === "testing") {
@@ -352,9 +362,12 @@ router.patch("/me/email",
         }
 
         // Handle updates
-        user.email = metadata.email;
+        const userEmailOriginal = user.email;
+        const userEmailUpdated = metadata.email;
 
-        // Update values
+        user.email = userEmailUpdated;
+
+        // Save user data
         const userData = await utilUser.saveData(user);
 
         // Generate token
@@ -365,6 +378,37 @@ router.patch("/me/email",
         res.
             header("x-sara-refresh", token).
             sendStatus(StatusCodes.CREATED);
+
+        // Fetch email variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+
+        const userId = userData._id;
+        const userNickname = userData.nickname;
+
+        const sessionId = req.body.session_id;
+        const accessTm = new Date().toISOString();
+        const accessUa = utilVisitor.getUserAgent(req, true);
+        const accessIp = utilVisitor.getIPAddress(req);
+
+        // Send email
+        try {
+            await utilMailSender("notify_update_email", {
+                to: userEmailUpdated,
+                audienceUrl,
+                userId,
+                userNickname,
+                userEmailOriginal,
+                userEmailUpdated,
+                sessionId,
+                accessIp,
+                accessUa,
+                accessTm,
+            });
+        } catch (e) {
+            console.error(e);
+            res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
+            return;
+        }
     },
 );
 
@@ -414,12 +458,13 @@ router.get("/:user_id",
             return;
         }
 
-        // Send response
+        // Handle conversion
         const userData = user.toObject();
 
         const avatarRaw = userData.email.toLowerCase();
         const avatarHash = utilNative.sha256hex(avatarRaw);
 
+        // Send response
         res.send({
             profile: {
                 nickname: userData.nickname,
@@ -490,21 +535,27 @@ router.post("/",
             return;
         }
 
-        // Fetch session details
-        const sessionIp = utilVisitor.getIPAddress(req);
-        const sessionUa = utilVisitor.getUserAgent(req, true);
-        const sessionTm = new Date().toISOString();
+        // Fetch email variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
 
-        // Handle mail
+        const userNickname = metadata.nickname;
+        const userEmail = metadata.email;
+
+        const sessionTm = new Date().toISOString();
+        const sessionUa = utilVisitor.getUserAgent(req, true);
+        const sessionIp = utilVisitor.getIPAddress(req);
+
+        // Send email
         try {
-            await utilMailSender("create_user", {
-                name: metadata.nickname,
-                to: req.body.email,
-                website: getMust("SARA_AUDIENCE_URL"),
-                session_ip: sessionIp,
-                session_id: sessionId,
-                session_ua: sessionUa,
-                session_tm: sessionTm,
+            await utilMailSender("verify_create_user", {
+                to: userEmail,
+                audienceUrl,
+                userNickname,
+                userEmail,
+                sessionIp,
+                sessionId,
+                sessionUa,
+                sessionTm,
                 code,
             });
             if (getMust("NODE_ENV") === "testing") {
@@ -604,6 +655,8 @@ router.patch("/",
 
         // Handle creation
         const user = new User(metadata);
+
+        // Save user data
         const userData = await utilUser.saveData(user);
 
         // Handle avatar
@@ -619,6 +672,37 @@ router.patch("/",
         res.
             header("x-sara-refresh", token).
             sendStatus(StatusCodes.CREATED);
+
+        // Fetch email variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+
+        const userId = userData._id;
+        const userNickname = userData.nickname;
+        const userEmail = userData.email;
+
+        const sessionId = req.body.session_id;
+        const accessIp = utilVisitor.getIPAddress(req);
+        const accessUa = utilVisitor.getUserAgent(req, true);
+        const accessTm = new Date().toISOString();
+
+        // Send email
+        try {
+            await utilMailSender("notify_create_user", {
+                to: userEmail,
+                audienceUrl,
+                userId,
+                userNickname,
+                userEmail,
+                sessionId,
+                accessIp,
+                accessUa,
+                accessTm,
+            });
+        } catch (e) {
+            console.error(e);
+            res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
+            return;
+        }
     },
 );
 
