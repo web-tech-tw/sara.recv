@@ -394,6 +394,7 @@ router.patch("/me/email",
         try {
             await utilMailSender("notify_update_email", {
                 to: userEmailUpdated,
+                cc: [userEmailOriginal],
                 audienceUrl,
                 userId,
                 userNickname,
