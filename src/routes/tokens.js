@@ -28,7 +28,7 @@ const cache = useCache();
 /**
  * @openapi
  * /tokens/{token_id}:
- *   get:
+ *   head:
  *     summary: Validate a token is valid or not
  *     description: This endpoint is used to validate a token is valid or not.
  *     tags:
@@ -56,6 +56,12 @@ router.head("/:token_id",
 
         // Print token ID
         console.log("Token ID:", tokenId);
+
+        // Check token ID
+        if (tokenId.startsWith("!")) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
 
         // Return response
         res.sendStatus(StatusCodes.OK);
