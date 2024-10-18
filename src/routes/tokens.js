@@ -27,6 +27,43 @@ const cache = useCache();
 
 /**
  * @openapi
+ * /tokens/{token_id}:
+ *   get:
+ *     summary: Validate a token is valid or not
+ *     description: This endpoint is used to validate a token is valid or not.
+ *     tags:
+ *       - tokens
+ *     parameters:
+ *       - name: token_id
+ *         in: path
+ *         description: ID of the token to retrieve
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Token is valid
+ *       404:
+ *         description: Token is invalid
+ */
+router.head("/:token_id",
+    middlewareValidator.param("token_id").notEmpty(),
+    middlewareInspector,
+    middlewareRestrictor(10, 60, true, StatusCodes.NOT_FOUND),
+    async (req, res) => {
+        // Assign shortcuts
+        const tokenId = req.params.token_id;
+
+        // Print token ID
+        console.log("Token ID:", tokenId);
+
+        // Return response
+        res.sendStatus(StatusCodes.OK);
+    },
+);
+
+/**
+ * @openapi
  * /tokens:
  *   post:
  *     tags:
