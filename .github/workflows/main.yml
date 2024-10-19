@@ -33,7 +33,7 @@ jobs:
       - name: Copy and edit config from sample
         run: |
           cp .env.sample .env
-          sed -i "s/local-mongo/127.0.0.1/g" .env
+          sed -i "s/mongo\:27017/127.0.0.1\:27017/g" .env
 
       - name: Generate new keypair
         run: |

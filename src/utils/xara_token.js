@@ -13,15 +13,17 @@ const {sign, verify} = require("jsonwebtoken");
 // Import nanoid
 const {nanoid: generateNanoId} = require("nanoid");
 
+// Import const
+const {
+    APP_NAME: issuerIdentity,
+} = require("../init/const");
+
 // Import usePublicKey and usePrivateKey
 const {usePublicKey, usePrivateKey} = require("../init/keypair");
 
 // Define hmac function - SHA256
 const hmac256hex = (data, key) =>
     createHmac("sha256", key).update(data).digest("hex");
-
-// Define Sara Token specs
-const issuerIdentity = "Sara Hoshikawa"; // The code of Sara v3
 
 // Define issueOptions
 const issueOptions = {
@@ -51,10 +53,22 @@ const validateOptions = {
 
 /**
  * Issue token
- * @param {object} user - The user data to issue.
+ * @module sara_token
+ * @function
+ * @param {object} userData - The user data to generate the token for.
  * @return {string}
  */
-function issue(user) {
+function issue(userData) {
+    const user = {
+        _id: userData._id,
+        email: userData.email,
+        nickname: userData.nickname,
+        avatar_hash: userData.avatar_hash,
+        roles: userData.roles,
+        created_at: userData.created_at,
+        updated_at: userData.updated_at,
+    };
+
     const privateKey = usePrivateKey();
 
     const saraTokenId = generateNanoId();
@@ -69,6 +83,8 @@ function issue(user) {
 
 /**
  * Update token
+ * @module sara_token
+ * @function
  * @param {object} token - The token to update.
  * @param {object} user - The user data to update.
  * @return {string}

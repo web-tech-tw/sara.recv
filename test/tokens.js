@@ -9,6 +9,10 @@ const {step} = require("mocha-steps");
 
 const {StatusCodes} = require("http-status-codes");
 
+const {
+    HEADER_REFRESH_TOKEN: headerRefreshToken,
+} = require("../init/const");
+
 const {useApp} = require("../src/init/express");
 const {useCache} = require("../src/init/cache");
 
@@ -64,7 +68,7 @@ describe("/tokens", function() {
             .expect("Content-Type", /plain/)
             .expect(StatusCodes.CREATED)
             .then((res) => {
-                utils.log("x-sara-refresh", res.headers["x-sara-refresh"]);
+                utils.log(headerRefreshToken, res.headers[headerRefreshToken]);
                 done();
             })
             .catch((e) => {

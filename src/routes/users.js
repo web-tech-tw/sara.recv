@@ -6,11 +6,25 @@ const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
 const {useCache} = require("../init/cache");
 
+const {
+    APP_NAME: issuerIdentity,
+    HEADER_REFRESH_TOKEN: headerRefreshToken,
+    SESSION_TYPE_CREATE_USER: sessionTypeCreateUser,
+    SESSION_TYPE_CREATE_PASSKEY: sessionTypeCreatePasskey,
+    SESSION_TYPE_UPDATE_EMAIL: sessionTypeUpdateEmail,
+} = require("../init/const");
+
 const User = require("../models/user");
+
+const {
+    generateRegistrationOptions,
+    verifyRegistrationResponse,
+} = require("@simplewebauthn/server");
 
 const utilMailSender = require("../utils/mail_sender");
 const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
+const utilPasskeySession = require("../utils/passkey_session");
 const utilVisitor = require("../utils/visitor");
 const utilUser = require("../utils/user");
 const utilNative = require("../utils/native");
@@ -52,7 +66,15 @@ const cache = useCache();
 router.get("/me",
     middlewareAccess(null),
     async (req, res) => {
-        const {profile} = req.auth.metadata;
+        const userId = req.auth.id;
+
+        const user = await User.findById(userId).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        const profile = user.toObject();
 
         const avatarRaw = profile.email.toLowerCase();
         const avatarHash = utilNative.sha256hex(avatarRaw);
@@ -109,7 +131,7 @@ router.put("/me",
             req.auth.metadata.profile.nickname;
 
         // Check reserved words
-        if (user.nickname === "Sara Hoshikawa") {
+        if (user.nickname === issuerIdentity) {
             res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         }
@@ -123,7 +145,7 @@ router.put("/me",
 
         // Send response
         res.
-            header("x-sara-refresh", token).
+            header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
     },
 );
@@ -160,7 +182,7 @@ router.delete("/me",
         }
 
         // Handle updates
-        user.nickname = "Sara Hoshikawa";
+        user.nickname = issuerIdentity;
         user.email = new Date().toISOString();
 
         // Update values
@@ -168,7 +190,7 @@ router.delete("/me",
 
         // Send response
         res.
-            header("x-sara-refresh", "|").
+            header(headerRefreshToken, "|").
             sendStatus(StatusCodes.NO_CONTENT);
     },
 );
@@ -236,7 +258,7 @@ router.put("/me/email",
             email: req.body.email,
         };
         const {code, sessionId} = utilCodeSession.
-            createOne(metadata, 8, 1800);
+            createOne("create_email", metadata, 8, 1800);
 
         // Handle conflict
         if (await User.findOne({email: req.body.email}).exec()) {
@@ -283,13 +305,15 @@ router.put("/me/email",
         }
 
         // Send response
-        res.send({
-            session_type: "update_email",
-            session_ip: sessionIp,
-            session_id: sessionId,
-            session_ua: sessionUa,
-            session_tm: sessionTm,
-        });
+        res.
+            status(StatusCodes.CREATED).
+            send({
+                session_type: sessionTypeUpdateEmail,
+                session_ip: sessionIp,
+                session_id: sessionId,
+                session_ua: sessionUa,
+                session_tm: sessionTm,
+            });
     },
 );
 
@@ -336,7 +360,7 @@ router.patch("/me/email",
     async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
-            getOne(req.body.session_id, req.body.code);
+            getOne("create_email", req.body.session_id, req.body.code);
 
         if (metadata === null) {
             // Check metadata
@@ -344,8 +368,7 @@ router.patch("/me/email",
             return;
         } else {
             // Remove session
-            utilCodeSession.
-                deleteOne(req.body.session_id, req.body.code);
+            metadata.deleteIt();
         }
 
         if (req.auth.id !== metadata.userId) {
@@ -376,7 +399,7 @@ router.patch("/me/email",
 
         // Send response
         res.
-            header("x-sara-refresh", token).
+            header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
 
         // Fetch email variables
@@ -410,6 +433,192 @@ router.patch("/me/email",
             res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
             return;
         }
+    },
+);
+
+
+/**
+ * @openapi
+ * /users/me/passkeys:
+ *   post:
+ *     tags:
+ *       - users
+ *     summary: Add a passkey to the user
+ *     description: Issues a passkey session for a user
+ *                  to add a passkey to their account.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
+ *     responses:
+ *       201:
+ *         description: Returns a session ID for the user
+ *                      to verify their identity later.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 session_type:
+ *                   type: string
+ *                   description: The type of the session.
+ *                   example: token
+ *                 session_id:
+ *                   type: string
+ *                   description: The ID of the session.
+ *       404:
+ *         description: Returns "Not Found" if the user cannot be found.
+ *       429:
+ *         description: Returns "Too Many Requests"
+ *                      if the rate limit is exceeded.
+ */
+router.post("/me/passkeys",
+    middlewareAccess(null),
+    async (req, res) => {
+        // Fetch audience variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+        const {hostname: audienceHost} = new URL(audienceUrl);
+
+        // Check user exists by the ID
+        const user = await User.findById(req.auth.id).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Fetch exclude credentials
+        const {passkeys} = user;
+        const excludeCredentials = passkeys.map((passkey) => ({
+            id: passkey.id,
+        }));
+
+        // Generate options
+        const sessionOptions = await generateRegistrationOptions({
+            rpName: issuerIdentity,
+            rpID: audienceHost,
+            userName: req.auth.metadata.profile.email,
+            userDisplayName: req.auth.metadata.profile.nickname,
+            excludeCredentials,
+            authenticatorSelection: {
+                residentKey: "preferred",
+                userVerification: "preferred",
+            },
+        });
+
+        const metadata = {
+            userId: req.auth.id,
+            challenge: sessionOptions.challenge,
+        };
+        const {sessionId} = utilPasskeySession.
+            createOne(sessionTypeCreatePasskey, metadata, 1800);
+
+        // Send response
+        res.
+            status(StatusCodes.CREATED).
+            send({
+                session_type: sessionTypeCreatePasskey,
+                session_id: sessionId,
+                session_options: sessionOptions,
+            });
+    },
+);
+
+/**
+ * @openapi
+ * /users/me/passkeys:
+ *   patch:
+ *     tags:
+ *       - users
+ *     summary: Verify user's passkey to add it into the account
+ *     description: Verify user's passkey to add it into the account.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: The code that the user receives in the email.
+ *               session_id:
+ *                 type: string
+ *                 description: The ID of the session that
+ *                              the user receives in the email.
+ *     responses:
+ *       201:
+ *         description: Returns a header named
+ *                      "x-sara-refresh" that contains the access token.
+ *       401:
+ *         description: Returns "Unauthorized"
+ *                      if the user's identity cannot be verified.
+ *       404:
+ *         description: Returns "Not Found" if the user cannot be found.
+ */
+router.patch("/me/passkeys",
+    middlewareAccess(null),
+    middlewareValidator.body("session_id").isString().notEmpty(),
+    middlewareValidator.body("credential").isObject().notEmpty(),
+    middlewareInspector,
+    async (req, res) => {
+        // Fetch audience variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+        const {hostname: audienceHost} = new URL(audienceUrl);
+
+        // Get metadata back by the session ID
+        const metadata = utilPasskeySession.
+            getOne(sessionTypeCreatePasskey, req.body.session_id);
+
+        if (metadata === null) {
+            // Check metadata
+            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            return;
+        } else {
+            // Remove session
+            metadata.deleteIt();
+        }
+
+        if (req.auth.id !== metadata.userId) {
+            // Check metadata
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            return;
+        }
+
+        // Verify registration response
+        const verification = await verifyRegistrationResponse({
+            response: req.body.credential,
+            expectedChallenge: metadata.challenge,
+            expectedOrigin: audienceUrl,
+            expectedRPID: audienceHost,
+        });
+
+        if (!verification.verified || !verification.registrationInfo) {
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            return;
+        }
+
+        // Check user exists by the ID
+        const user = await User.findById(req.auth.id).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Handle updates
+        if (!user.passkeys) {
+            user.passkeys = [];
+        }
+
+        const {registrationInfo} = verification;
+        const {credential} = registrationInfo;
+        credential.name = utilVisitor.getUserAgent(req, true);
+        user.passkeys.push(credential);
+
+        // Save user data
+        await utilUser.saveData(user);
+
+        // Send response
+        res.sendStatus(StatusCodes.CREATED);
     },
 );
 
@@ -528,10 +737,10 @@ router.post("/",
             updated_at: Date.now(),
         };
         const {code, sessionId} = utilCodeSession.
-            createOne(metadata, 7, 1800);
+            createOne(sessionTypeCreateUser, metadata, 7, 1800);
 
         // Check reserved words
-        if (metadata.nickname === "Sara Hoshikawa") {
+        if (metadata.nickname === issuerIdentity) {
             res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         }
@@ -578,7 +787,7 @@ router.post("/",
         res.
             status(StatusCodes.CREATED).
             send({
-                session_type: "user",
+                session_type: sessionTypeCreateUser,
                 session_ip: sessionIp,
                 session_id: sessionId,
                 session_ua: sessionUa,
@@ -636,7 +845,7 @@ router.patch("/",
     async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
-            getOne(req.body.session_id, req.body.code);
+            getOne(sessionTypeCreateUser, req.body.session_id, req.body.code);
 
         if (metadata === null) {
             // Check metadata
@@ -644,8 +853,7 @@ router.patch("/",
             return;
         } else {
             // Remove session
-            utilCodeSession.
-                deleteOne(req.body.session_id, req.body.code);
+            metadata.deleteIt();
         }
 
         // Handle conflict
@@ -671,7 +879,7 @@ router.patch("/",
 
         // Send response
         res.
-            header("x-sara-refresh", token).
+            header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
 
         // Fetch email variables
