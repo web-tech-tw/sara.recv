@@ -5,6 +5,10 @@ const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
 const {useCache} = require("../init/cache");
 
+const {
+    HEADER_REFRESH_TOKEN: headerRefreshToken,
+} = require("../init/const");
+
 const User = require("../models/user");
 
 const {
@@ -196,7 +200,7 @@ router.post("/",
  *   patch:
  *     tags:
  *       - tokens
- *     summary: Verify user's identity and issue an access token
+ *     summary: Verify user's identity and issue an access token by a code
  *     description: Verify user's identity by checking the session_id and
  *                  code that the user provides.
  *                  If the session_id and code are valid,
@@ -274,7 +278,7 @@ router.patch("/",
 
         // Send response
         res.
-            header("x-sara-refresh", token).
+            header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
 
         // Fetch email variables
@@ -310,6 +314,53 @@ router.patch("/",
     },
 );
 
+/**
+ * @openapi
+ * /tokens/passkeys:
+ *   post:
+ *     tags:
+ *       - tokens
+ *     summary: Issue a passkey session for a user
+ *     description: Issues a passkey session for a user by using
+ *                  the WebAuthn standard.
+ *                  The user can use the passkey to verify
+ *                  their identity later.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 description: The email address of the user.
+ *                 format: email
+ *                 example: test@example.org
+ *     responses:
+ *       201:
+ *         description: Returns a session ID for the user
+ *                      to verify their identity later.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 session_type:
+ *                   type: string
+ *                   description: The type of the session.
+ *                   example: token
+ *                 session_id:
+ *                   type: string
+ *                   description: The ID of the session.
+ *       404:
+ *         description: Returns "Not Found" if the user cannot be found.
+ *       429:
+ *         description: Returns "Too Many Requests"
+ *                      if the rate limit is exceeded.
+ */
 router.post("/passkeys",
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
@@ -349,6 +400,43 @@ router.post("/passkeys",
     },
 );
 
+/**
+ * @openapi
+ * /tokens/passkeys:
+ *   patch:
+ *     tags:
+ *       - tokens
+ *     summary: Verify user's identity and issue an access token by passkey
+ *     description: Verify user's identity by checking the session_id and
+ *                  code that the user provides.
+ *                  If the session_id and credential are valid,
+ *                  the server issues an access token.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: The code that the user receives in the email.
+ *               session_id:
+ *                 type: string
+ *                 description: The ID of the session that
+ *                              the user receives in the email.
+ *     responses:
+ *       201:
+ *         description: Returns a header named
+ *                      "x-sara-refresh" that contains the access token.
+ *       401:
+ *         description: Returns "Unauthorized"
+ *                      if the user's identity cannot be verified.
+ *       404:
+ *         description: Returns "Not Found" if the user cannot be found.
+ */
 router.patch("/passkeys",
     middlewareValidator.body("session_id").notEmpty(),
     middlewareValidator.body("credential").isObject().notEmpty(),
@@ -419,7 +507,7 @@ router.patch("/passkeys",
 
         // Send response
         res.
-            header("x-sara-refresh", token).
+            header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
 
         // Fetch email variables

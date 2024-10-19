@@ -8,6 +8,9 @@ const {useCache} = require("../init/cache");
 
 const {
     APP_NAME: issuerIdentity,
+    HEADER_REFRESH_TOKEN: headerRefreshToken,
+    SESSION_TYPE_CREATE_USER: sessionTypeCreateUser,
+    SESSION_TYPE_UPDATE_EMAIL: sessionTypeUpdateEmail,
 } = require("../init/const");
 
 const User = require("../models/user");
@@ -141,7 +144,7 @@ router.put("/me",
 
         // Send response
         res.
-            header("x-sara-refresh", token).
+            header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
     },
 );
@@ -186,7 +189,7 @@ router.delete("/me",
 
         // Send response
         res.
-            header("x-sara-refresh", "|").
+            header(headerRefreshToken, "|").
             sendStatus(StatusCodes.NO_CONTENT);
     },
 );
@@ -302,7 +305,7 @@ router.put("/me/email",
 
         // Send response
         res.send({
-            session_type: "update_email",
+            session_type: sessionTypeUpdateEmail,
             session_ip: sessionIp,
             session_id: sessionId,
             session_ua: sessionUa,
@@ -393,7 +396,7 @@ router.patch("/me/email",
 
         // Send response
         res.
-            header("x-sara-refresh", token).
+            header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
 
         // Fetch email variables
@@ -430,6 +433,40 @@ router.patch("/me/email",
     },
 );
 
+
+/**
+ * @openapi
+ * /users/me/passkeys:
+ *   post:
+ *     tags:
+ *       - users
+ *     summary: Add a passkey to the user
+ *     description: Issues a passkey session for a user
+ *                  to add a passkey to their account.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
+ *     responses:
+ *       201:
+ *         description: Returns a session ID for the user
+ *                      to verify their identity later.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 session_type:
+ *                   type: string
+ *                   description: The type of the session.
+ *                   example: token
+ *                 session_id:
+ *                   type: string
+ *                   description: The ID of the session.
+ *       404:
+ *         description: Returns "Not Found" if the user cannot be found.
+ *       429:
+ *         description: Returns "Too Many Requests"
+ *                      if the rate limit is exceeded.
+ */
 router.post("/me/passkeys",
     middlewareAccess(null),
     async (req, res) => {
@@ -478,6 +515,40 @@ router.post("/me/passkeys",
     },
 );
 
+/**
+ * @openapi
+ * /users/me/passkeys:
+ *   patch:
+ *     tags:
+ *       - users
+ *     summary: Verify user's passkey to add it into the account
+ *     description: Verify user's passkey to add it into the account.
+ *                  It also includes a restrictor middleware that limits
+ *                  the rate at which the endpoint can be accessed.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               code:
+ *                 type: string
+ *                 description: The code that the user receives in the email.
+ *               session_id:
+ *                 type: string
+ *                 description: The ID of the session that
+ *                              the user receives in the email.
+ *     responses:
+ *       201:
+ *         description: Returns a header named
+ *                      "x-sara-refresh" that contains the access token.
+ *       401:
+ *         description: Returns "Unauthorized"
+ *                      if the user's identity cannot be verified.
+ *       404:
+ *         description: Returns "Not Found" if the user cannot be found.
+ */
 router.patch("/me/passkeys",
     middlewareAccess(null),
     middlewareValidator.body("session_id").isString().notEmpty(),
@@ -660,7 +731,7 @@ router.post("/",
             updated_at: Date.now(),
         };
         const {code, sessionId} = utilCodeSession.
-            createOne("create_user", metadata, 7, 1800);
+            createOne(sessionTypeCreateUser, metadata, 7, 1800);
 
         // Check reserved words
         if (metadata.nickname === issuerIdentity) {
@@ -768,7 +839,7 @@ router.patch("/",
     async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
-            getOne("create_user", req.body.session_id, req.body.code);
+            getOne(sessionTypeCreateUser, req.body.session_id, req.body.code);
 
         if (metadata === null) {
             // Check metadata
@@ -802,7 +873,7 @@ router.patch("/",
 
         // Send response
         res.
-            header("x-sara-refresh", token).
+            header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
 
         // Fetch email variables
