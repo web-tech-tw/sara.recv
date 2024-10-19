@@ -11,7 +11,7 @@ const {StatusCodes} = require("http-status-codes");
 
 const {
     HEADER_REFRESH_TOKEN: headerRefreshToken,
-} = require("../init/const");
+} = require("../src/init/const");
 
 const {useApp} = require("../src/init/express");
 const {useCache} = require("../src/init/cache");
