@@ -7,9 +7,15 @@ const {useCache} = require("../init/cache");
 
 const User = require("../models/user");
 
+const {
+    generateAuthenticationOptions,
+    verifyAuthenticationResponse,
+} = require("@simplewebauthn/server");
+
 const utilMailSender = require("../utils/mail_sender");
 const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
+const utilPasskeySession = require("../utils/passkey_session");
 const utilVisitor = require("../utils/visitor");
 const utilNative = require("../utils/native");
 
@@ -128,11 +134,11 @@ router.post("/",
 
         // Handle code and metadata
         const metadata = {
-            userId: user._id.toString(),
-            email: req.body.email,
+            userId: user.id,
+            email: user.email,
         };
         const {code, sessionId} = utilCodeSession.
-            createOne(metadata, 6, 1800);
+            createOne("create_token", metadata, 6, 1800);
 
         // Handle conversion
         const userData = user.toObject();
@@ -230,7 +236,7 @@ router.patch("/",
     async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
-            getOne(req.body.session_id, req.body.code);
+            getOne("create_token", req.body.session_id, req.body.code);
 
         if (metadata === null) {
             // Check metadata
@@ -238,8 +244,7 @@ router.patch("/",
             return;
         } else {
             // Remove session
-            utilCodeSession.
-                deleteOne(req.body.session_id, req.body.code);
+            metadata.deleteIt();
         }
 
         // Check user exists by the email address
@@ -250,8 +255,153 @@ router.patch("/",
         }
 
         // Check metadata user id
-        if (user._id.toString() !== metadata.userId) {
+        if (user.id !== metadata.userId) {
             res.sendStatus(StatusCodes.FORBIDDEN);
+            return;
+        }
+
+        // Handle conversion
+        const userData = user.toObject();
+
+        // Handle avatar
+        const avatarRaw = userData.email.toLowerCase();
+        const avatarHash = utilNative.sha256hex(avatarRaw);
+        userData.avatar_hash = avatarHash;
+
+        // Generate token
+        const token = utilXaraToken.
+            issue();
+
+        // Send response
+        res.
+            header("x-sara-refresh", token).
+            sendStatus(StatusCodes.CREATED);
+
+        // Fetch email variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+
+        const userId = userData._id;
+        const userNickname = userData.nickname;
+        const userEmail = userData.email;
+
+        const sessionId = req.body.session_id;
+        const accessTm = new Date().toISOString();
+        const accessUa = utilVisitor.getUserAgent(req, true);
+        const accessIp = utilVisitor.getIPAddress(req);
+
+        // Send email
+        try {
+            await utilMailSender("notify_create_token", {
+                to: userEmail,
+                audienceUrl,
+                userId,
+                userNickname,
+                userEmail,
+                sessionId,
+                accessTm,
+                accessUa,
+                accessIp,
+            });
+        } catch (e) {
+            console.error(e);
+            res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
+            return;
+        }
+    },
+);
+
+router.post("/passkeys",
+    middlewareValidator.body("email").isEmail(),
+    middlewareInspector,
+    middlewareRestrictor(10, 3600, false),
+    async (req, res) => {
+        // Check user exists by the email address
+        const user = await User.findOne({email: req.body.email}).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Fetch audience variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+        const {hostname: audienceHost} = new URL(audienceUrl);
+
+        // Handle code and metadata
+        const {passkeys} = user;
+        const sessionOptions = await generateAuthenticationOptions({
+            rpID: audienceHost,
+            allowCredentials: passkeys,
+        });
+
+        // Create session
+        const metadata = {
+            userId: user.id,
+            challenge: sessionOptions.challenge,
+        };
+        const {sessionId} = utilPasskeySession.
+            createOne("create_token", metadata, 1800);
+
+        // Send response
+        res.send({
+            session_id: sessionId,
+            session_options: sessionOptions,
+        });
+    },
+);
+
+router.patch("/passkeys",
+    middlewareValidator.body("session_id").notEmpty(),
+    middlewareValidator.body("credential").isObject().notEmpty(),
+    middlewareInspector,
+    middlewareRestrictor(10, 3600, false),
+    async (req, res) => {
+        // Get metadata back by the session ID
+        const metadata = utilPasskeySession.
+            getOne("create_token", req.body.session_id);
+
+        if (metadata === null) {
+            // Check metadata
+            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            return;
+        } else {
+            // Remove session
+            metadata.deleteIt();
+        }
+
+        // Fetch audience variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+        const {hostname: audienceHost} = new URL(audienceUrl);
+
+        // Check user exists by the email address
+        const user = await User.findById(metadata.userId).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        const {credential} = req.body;
+        const passkey = user.passkeys.find((passkey) => {
+            return passkey.id === credential.id;
+        });
+        passkey.publicKey = passkey.publicKey.buffer;
+
+        let verification;
+        try {
+            verification = await verifyAuthenticationResponse({
+                response: credential,
+                credential: passkey,
+                expectedChallenge: metadata.challenge,
+                expectedOrigin: audienceUrl,
+                expectedRPID: audienceHost,
+            });
+        } catch (error) {
+            console.error(error);
+            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            return;
+        }
+
+        if (!verification.verified) {
+            res.sendStatus(StatusCodes.UNAUTHORIZED);
             return;
         }
 
@@ -273,8 +423,6 @@ router.patch("/",
             sendStatus(StatusCodes.CREATED);
 
         // Fetch email variables
-        const audienceUrl = getMust("SARA_AUDIENCE_URL");
-
         const userId = userData._id;
         const userNickname = userData.nickname;
         const userEmail = userData.email;

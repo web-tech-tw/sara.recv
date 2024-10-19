@@ -17,6 +17,10 @@ module.exports = new Schema({
         type: [String],
         default: [],
     },
+    passkeys: {
+        type: [{}],
+        default: [],
+    },
     created_at: {
         type: Number,
         default: Date.now,

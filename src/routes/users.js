@@ -6,11 +6,21 @@ const {StatusCodes} = require("http-status-codes");
 const {useApp, express} = require("../init/express");
 const {useCache} = require("../init/cache");
 
+const {
+    APP_NAME: issuerIdentity,
+} = require("../init/const");
+
 const User = require("../models/user");
+
+const {
+    generateRegistrationOptions,
+    verifyRegistrationResponse,
+} = require("@simplewebauthn/server");
 
 const utilMailSender = require("../utils/mail_sender");
 const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
+const utilPasskeySession = require("../utils/passkey_session");
 const utilVisitor = require("../utils/visitor");
 const utilUser = require("../utils/user");
 const utilNative = require("../utils/native");
@@ -52,7 +62,15 @@ const cache = useCache();
 router.get("/me",
     middlewareAccess(null),
     async (req, res) => {
-        const {profile} = req.auth.metadata;
+        const userId = req.auth.id;
+
+        const user = await User.findById(userId).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        const profile = user.toObject();
 
         const avatarRaw = profile.email.toLowerCase();
         const avatarHash = utilNative.sha256hex(avatarRaw);
@@ -109,7 +127,7 @@ router.put("/me",
             req.auth.metadata.profile.nickname;
 
         // Check reserved words
-        if (user.nickname === "Sara Hoshikawa") {
+        if (user.nickname === issuerIdentity) {
             res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         }
@@ -160,7 +178,7 @@ router.delete("/me",
         }
 
         // Handle updates
-        user.nickname = "Sara Hoshikawa";
+        user.nickname = issuerIdentity;
         user.email = new Date().toISOString();
 
         // Update values
@@ -236,7 +254,7 @@ router.put("/me/email",
             email: req.body.email,
         };
         const {code, sessionId} = utilCodeSession.
-            createOne(metadata, 8, 1800);
+            createOne("create_email", metadata, 8, 1800);
 
         // Handle conflict
         if (await User.findOne({email: req.body.email}).exec()) {
@@ -336,7 +354,7 @@ router.patch("/me/email",
     async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
-            getOne(req.body.session_id, req.body.code);
+            getOne("create_email", req.body.session_id, req.body.code);
 
         if (metadata === null) {
             // Check metadata
@@ -344,8 +362,7 @@ router.patch("/me/email",
             return;
         } else {
             // Remove session
-            utilCodeSession.
-                deleteOne(req.body.session_id, req.body.code);
+            metadata.deleteIt();
         }
 
         if (req.auth.id !== metadata.userId) {
@@ -410,6 +427,121 @@ router.patch("/me/email",
             res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
             return;
         }
+    },
+);
+
+router.post("/me/passkeys",
+    middlewareAccess(null),
+    async (req, res) => {
+        // Fetch audience variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+        const {hostname: audienceHost} = new URL(audienceUrl);
+
+        // Check user exists by the ID
+        const user = await User.findById(req.auth.id).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Fetch exclude credentials
+        const {passkeys} = user;
+        const excludeCredentials = passkeys.map((passkey) => ({
+            id: passkey.id,
+        }));
+
+        // Generate options
+        const sessionOptions = await generateRegistrationOptions({
+            rpName: issuerIdentity,
+            rpID: audienceHost,
+            userName: req.auth.metadata.profile.email,
+            userDisplayName: req.auth.metadata.profile.nickname,
+            excludeCredentials,
+            authenticatorSelection: {
+                residentKey: "preferred",
+                userVerification: "preferred",
+            },
+        });
+
+        const metadata = {
+            userId: req.auth.id,
+            challenge: sessionOptions.challenge,
+        };
+        const {sessionId} = utilPasskeySession.
+            createOne("create_passkey", metadata, 1800);
+
+        // Send response
+        res.send({
+            session_id: sessionId,
+            session_options: sessionOptions,
+        });
+    },
+);
+
+router.patch("/me/passkeys",
+    middlewareAccess(null),
+    middlewareValidator.body("session_id").isString().notEmpty(),
+    middlewareValidator.body("credential").isObject().notEmpty(),
+    middlewareInspector,
+    async (req, res) => {
+        // Fetch audience variables
+        const audienceUrl = getMust("SARA_AUDIENCE_URL");
+        const {hostname: audienceHost} = new URL(audienceUrl);
+
+        // Get metadata back by the session ID
+        const metadata = utilPasskeySession.
+            getOne("create_passkey", req.body.session_id);
+
+        if (metadata === null) {
+            // Check metadata
+            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            return;
+        } else {
+            // Remove session
+            metadata.deleteIt();
+        }
+
+        if (req.auth.id !== metadata.userId) {
+            // Check metadata
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            return;
+        }
+
+        // Verify registration response
+        const verification = await verifyRegistrationResponse({
+            response: req.body.credential,
+            expectedChallenge: metadata.challenge,
+            expectedOrigin: audienceUrl,
+            expectedRPID: audienceHost,
+        });
+
+        if (!verification.verified || !verification.registrationInfo) {
+            res.sendStatus(StatusCodes.FORBIDDEN);
+            return;
+        }
+
+        // Check user exists by the ID
+        const user = await User.findById(req.auth.id).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Handle updates
+        if (!user.passkeys) {
+            user.passkeys = [];
+        }
+
+        const {registrationInfo} = verification;
+        const {credential} = registrationInfo;
+        credential.name = utilVisitor.getUserAgent(req, true);
+        user.passkeys.push(credential);
+
+        // Save user data
+        await utilUser.saveData(user);
+
+        // Send response
+        res.sendStatus(StatusCodes.CREATED);
     },
 );
 
@@ -528,10 +660,10 @@ router.post("/",
             updated_at: Date.now(),
         };
         const {code, sessionId} = utilCodeSession.
-            createOne(metadata, 7, 1800);
+            createOne("create_user", metadata, 7, 1800);
 
         // Check reserved words
-        if (metadata.nickname === "Sara Hoshikawa") {
+        if (metadata.nickname === issuerIdentity) {
             res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         }
@@ -636,7 +768,7 @@ router.patch("/",
     async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
-            getOne(req.body.session_id, req.body.code);
+            getOne("create_user", req.body.session_id, req.body.code);
 
         if (metadata === null) {
             // Check metadata
@@ -644,8 +776,7 @@ router.patch("/",
             return;
         } else {
             // Remove session
-            utilCodeSession.
-                deleteOne(req.body.session_id, req.body.code);
+            metadata.deleteIt();
         }
 
         // Handle conflict
