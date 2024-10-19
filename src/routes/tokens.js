@@ -7,6 +7,7 @@ const {useCache} = require("../init/cache");
 
 const {
     HEADER_REFRESH_TOKEN: headerRefreshToken,
+    SESSION_TYPE_CREATE_TOKEN: sessionTypeCreateToken,
 } = require("../init/const");
 
 const User = require("../models/user");
@@ -185,7 +186,7 @@ router.post("/",
         res.
             status(StatusCodes.CREATED).
             send({
-                session_type: "token",
+                session_type: sessionTypeCreateToken,
                 session_ip: sessionIp,
                 session_id: sessionId,
                 session_ua: sessionUa,
@@ -274,7 +275,7 @@ router.patch("/",
 
         // Generate token
         const token = utilXaraToken.
-            issue();
+            issue(userData);
 
         // Send response
         res.
@@ -393,10 +394,12 @@ router.post("/passkeys",
             createOne("create_token", metadata, 1800);
 
         // Send response
-        res.send({
-            session_id: sessionId,
-            session_options: sessionOptions,
-        });
+        res.
+            status(StatusCodes.CREATED).
+            send({
+                session_id: sessionId,
+                session_options: sessionOptions,
+            });
     },
 );
 

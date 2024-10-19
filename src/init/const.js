@@ -13,6 +13,7 @@ exports.HEADER_REFRESH_TOKEN = "x-sara-refresh";
 
 exports.SESSION_TYPE_CREATE_USER = "create_user";
 exports.SESSION_TYPE_CREATE_TOKEN = "create_token";
+exports.SESSION_TYPE_CREATE_PASSKEY = "create_passkey";
 exports.SESSION_TYPE_UPDATE_EMAIL = "update_email";
 
 exports.OPENAPI_EXPORTED_FILENAME = "openapi_exported.json";

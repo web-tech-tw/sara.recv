@@ -10,6 +10,7 @@ const {
     APP_NAME: issuerIdentity,
     HEADER_REFRESH_TOKEN: headerRefreshToken,
     SESSION_TYPE_CREATE_USER: sessionTypeCreateUser,
+    SESSION_TYPE_CREATE_PASSKEY: sessionTypeCreatePasskey,
     SESSION_TYPE_UPDATE_EMAIL: sessionTypeUpdateEmail,
 } = require("../init/const");
 
@@ -304,13 +305,15 @@ router.put("/me/email",
         }
 
         // Send response
-        res.send({
-            session_type: sessionTypeUpdateEmail,
-            session_ip: sessionIp,
-            session_id: sessionId,
-            session_ua: sessionUa,
-            session_tm: sessionTm,
-        });
+        res.
+            status(StatusCodes.CREATED).
+            send({
+                session_type: sessionTypeUpdateEmail,
+                session_ip: sessionIp,
+                session_id: sessionId,
+                session_ua: sessionUa,
+                session_tm: sessionTm,
+            });
     },
 );
 
@@ -505,13 +508,16 @@ router.post("/me/passkeys",
             challenge: sessionOptions.challenge,
         };
         const {sessionId} = utilPasskeySession.
-            createOne("create_passkey", metadata, 1800);
+            createOne(sessionTypeCreatePasskey, metadata, 1800);
 
         // Send response
-        res.send({
-            session_id: sessionId,
-            session_options: sessionOptions,
-        });
+        res.
+            status(StatusCodes.CREATED).
+            send({
+                session_type: sessionTypeCreatePasskey,
+                session_id: sessionId,
+                session_options: sessionOptions,
+            });
     },
 );
 
@@ -561,7 +567,7 @@ router.patch("/me/passkeys",
 
         // Get metadata back by the session ID
         const metadata = utilPasskeySession.
-            getOne("create_passkey", req.body.session_id);
+            getOne(sessionTypeCreatePasskey, req.body.session_id);
 
         if (metadata === null) {
             // Check metadata
@@ -781,7 +787,7 @@ router.post("/",
         res.
             status(StatusCodes.CREATED).
             send({
-                session_type: "user",
+                session_type: sessionTypeCreateUser,
                 session_ip: sessionIp,
                 session_id: sessionId,
                 session_ua: sessionUa,
