@@ -486,7 +486,7 @@ router.post("/me/passkeys",
         // Fetch exclude credentials
         const {passkeys} = user;
         const excludeCredentials = passkeys.map((passkey) => ({
-            id: passkey._id,
+            id: passkey.id,
         }));
 
         // Generate options

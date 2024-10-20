@@ -380,7 +380,7 @@ router.post("/passkeys",
 
         // Fetch allowed credentials
         const allowCredentials = user.passkeys.map((passkey) => ({
-            id: passkey._id,
+            id: passkey.id,
         }));
 
         // Handle code and metadata
@@ -476,7 +476,7 @@ router.patch("/passkeys",
 
         const {credential} = req.body;
         const passkey = user.passkeys.find((passkey) => {
-            return passkey._id === credential.id;
+            return passkey.id === credential.id;
         });
 
         let verification;
