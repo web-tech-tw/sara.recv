@@ -25,9 +25,7 @@ const utilMailSender = require("../utils/mail_sender");
 const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilPasskeySession = require("../utils/passkey_session");
-const utilPasskey = require("../utils/passkey");
 const utilVisitor = require("../utils/visitor");
-const utilUser = require("../utils/user");
 const utilNative = require("../utils/native");
 
 const middlewareAccess = require("../middleware/access");
@@ -138,7 +136,7 @@ router.put("/me",
         }
 
         // Save user data
-        const userData = await utilUser.saveData(user);
+        const userData = (await user.save()).toObject();
 
         // Generate token
         const token = utilXaraToken.
@@ -187,7 +185,7 @@ router.delete("/me",
         user.email = new Date().toISOString();
 
         // Update values
-        await utilUser.saveData(user);
+        await user.save();
 
         // Send response
         res.
@@ -392,7 +390,7 @@ router.patch("/me/email",
         user.email = userEmailUpdated;
 
         // Save user data
-        const userData = await utilUser.saveData(user);
+        const userData = (await user.save()).toObject();
 
         // Generate token
         const token = utilXaraToken.
@@ -614,11 +612,10 @@ router.patch("/me/passkeys",
         const {credential} = registrationInfo;
 
         const label = utilVisitor.getUserAgent(req, true);
-        const passkey = utilPasskey.toPasskeyBSON(label, credential);
-        user.passkeys.push(passkey);
+        user.passkeys.push({label, credential});
 
         // Save user data
-        await utilUser.saveData(user);
+        await user.save();
 
         // Send response
         res.sendStatus(StatusCodes.CREATED);
@@ -869,7 +866,7 @@ router.patch("/",
         const user = new User(metadata);
 
         // Save user data
-        const userData = await utilUser.saveData(user);
+        const userData = (await user.save()).toObject();
 
         // Handle avatar
         const avatarRaw = userData.email.toLowerCase();

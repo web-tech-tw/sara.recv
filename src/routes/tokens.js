@@ -21,7 +21,6 @@ const utilMailSender = require("../utils/mail_sender");
 const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilPasskeySession = require("../utils/passkey_session");
-const utilPasskey = require("../utils/passkey");
 const utilVisitor = require("../utils/visitor");
 const utilNative = require("../utils/native");
 
@@ -476,17 +475,15 @@ router.patch("/passkeys",
         }
 
         const {credential} = req.body;
-        const passkey = utilPasskey.fromPasskeyBSON(
-            user.passkeys.find((passkey) => {
-                return passkey._id === credential.id;
-            }),
-        );
+        const passkey = user.passkeys.find((passkey) => {
+            return passkey._id === credential.id;
+        });
 
         let verification;
         try {
             verification = await verifyAuthenticationResponse({
                 response: credential,
-                credential: passkey,
+                credential: passkey.credential,
                 expectedChallenge: metadata.challenge,
                 expectedOrigin: audienceUrl,
                 expectedRPID: audienceHost,

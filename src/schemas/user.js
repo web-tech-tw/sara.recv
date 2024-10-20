@@ -3,9 +3,9 @@
 const mongoose = require("mongoose");
 const {Schema} = mongoose;
 
-const schemaPasskey = require("./passkey");
+const Passkey = require("./passkey");
 
-module.exports = new Schema({
+const schema = new Schema({
     email: {
         type: String,
         required: true,
@@ -20,15 +20,11 @@ module.exports = new Schema({
         default: [],
     },
     passkeys: {
-        type: [schemaPasskey],
+        type: [Passkey],
         default: [],
     },
-    created_at: {
-        type: Number,
-        default: Date.now,
-    },
-    updated_at: {
-        type: Number,
-        default: Date.now,
-    },
+}, {
+    timestamps: true,
 });
+
+module.exports = schema;

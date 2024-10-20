@@ -5,8 +5,6 @@ const {useApp, express} = require("../init/express");
 
 const User = require("../models/user");
 
-const utilUser = require("../utils/user");
-
 const middlewareAccess = require("../middleware/access");
 const middlewareInspector = require("../middleware/inspector");
 const middlewareValidator = require("express-validator");
@@ -131,7 +129,7 @@ router.post("/users/:user_id/roles",
 
         // Update values
         user.roles = [...user.roles, roleName];
-        await utilUser.saveData(user);
+        await user.save();
 
         // Send response
         res.sendStatus(StatusCodes.CREATED);
@@ -198,7 +196,7 @@ router.delete("/users/:user_id/roles/:role_name",
 
         // Update values
         user.roles = user.roles.filter((name) => name !== roleName);
-        await utilUser.saveData(user);
+        await user.save();
 
         // Send response
         res.sendStatus(StatusCodes.NO_CONTENT);
