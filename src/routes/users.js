@@ -25,6 +25,7 @@ const utilMailSender = require("../utils/mail_sender");
 const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilPasskeySession = require("../utils/passkey_session");
+const utilPasskey = require("../utils/passkey");
 const utilVisitor = require("../utils/visitor");
 const utilUser = require("../utils/user");
 const utilNative = require("../utils/native");
@@ -487,7 +488,7 @@ router.post("/me/passkeys",
         // Fetch exclude credentials
         const {passkeys} = user;
         const excludeCredentials = passkeys.map((passkey) => ({
-            id: passkey.id,
+            id: passkey._id,
         }));
 
         // Generate options
@@ -611,8 +612,10 @@ router.patch("/me/passkeys",
 
         const {registrationInfo} = verification;
         const {credential} = registrationInfo;
-        credential.name = utilVisitor.getUserAgent(req, true);
-        user.passkeys.push(credential);
+
+        const label = utilVisitor.getUserAgent(req, true);
+        const passkey = utilPasskey.toPasskeyBSON(label, credential);
+        user.passkeys.push(passkey);
 
         // Save user data
         await utilUser.saveData(user);

@@ -1,4 +1,7 @@
 {
+  "plugins": [
+    "jsdoc"
+  ],
   "extends": [
     "eslint:recommended",
     "google"

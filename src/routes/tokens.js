@@ -21,6 +21,7 @@ const utilMailSender = require("../utils/mail_sender");
 const utilXaraToken = require("../utils/xara_token");
 const utilCodeSession = require("../utils/code_session");
 const utilPasskeySession = require("../utils/passkey_session");
+const utilPasskey = require("../utils/passkey");
 const utilVisitor = require("../utils/visitor");
 const utilNative = require("../utils/native");
 
@@ -378,11 +379,15 @@ router.post("/passkeys",
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
         const {hostname: audienceHost} = new URL(audienceUrl);
 
+        // Fetch allowed credentials
+        const allowCredentials = user.passkeys.map((passkey) => ({
+            id: passkey._id,
+        }));
+
         // Handle code and metadata
-        const {passkeys} = user;
         const sessionOptions = await generateAuthenticationOptions({
             rpID: audienceHost,
-            allowCredentials: passkeys,
+            allowCredentials,
         });
 
         // Create session
@@ -471,10 +476,11 @@ router.patch("/passkeys",
         }
 
         const {credential} = req.body;
-        const passkey = user.passkeys.find((passkey) => {
-            return passkey.id === credential.id;
-        });
-        passkey.publicKey = passkey.publicKey.buffer;
+        const passkey = utilPasskey.fromPasskeyBSON(
+            user.passkeys.find((passkey) => {
+                return passkey._id === credential.id;
+            }),
+        );
 
         let verification;
         try {

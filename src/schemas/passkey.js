@@ -3,25 +3,27 @@
 const mongoose = require("mongoose");
 const {Schema} = mongoose;
 
-const schemaPasskey = require("./passkey");
-
 module.exports = new Schema({
-    email: {
+    _id: {
         type: String,
         required: true,
         unique: true,
     },
-    nickname: {
+    label: {
         type: String,
         required: true,
     },
-    roles: {
-        type: [String],
-        default: [],
+    public_key: {
+        type: Buffer,
+        required: true,
     },
-    passkeys: {
-        type: [schemaPasskey],
-        default: [],
+    counter: {
+        type: Number,
+        required: true,
+    },
+    transports: {
+        type: [String],
+        required: true,
     },
     created_at: {
         type: Number,
