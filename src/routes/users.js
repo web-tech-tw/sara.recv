@@ -612,7 +612,7 @@ router.patch("/me/passkeys",
         const {credential} = registrationInfo;
 
         const label = utilVisitor.getUserAgent(req, true);
-        user.passkeys.push({label, credential});
+        user.passkeys.push({...credential, label});
 
         // Save user data
         await user.save();

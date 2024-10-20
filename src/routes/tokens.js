@@ -483,7 +483,7 @@ router.patch("/passkeys",
         try {
             verification = await verifyAuthenticationResponse({
                 response: credential,
-                credential: passkey.credential,
+                credential: passkey,
                 expectedChallenge: metadata.challenge,
                 expectedOrigin: audienceUrl,
                 expectedRPID: audienceHost,
