@@ -290,6 +290,8 @@ router.patch("/",
         const userEmail = userData.email;
 
         const sessionId = req.body.session_id;
+
+        const accessMethod = "Email Code";
         const accessTm = new Date().toISOString();
         const accessUa = utilVisitor.getUserAgent(req, true);
         const accessIp = utilVisitor.getIPAddress(req);
@@ -303,6 +305,7 @@ router.patch("/",
                 userNickname,
                 userEmail,
                 sessionId,
+                accessMethod,
                 accessTm,
                 accessUa,
                 accessIp,
@@ -522,6 +525,8 @@ router.patch("/passkeys",
         const userEmail = userData.email;
 
         const sessionId = req.body.session_id;
+
+        const accessMethod = "Passkey";
         const accessTm = new Date().toISOString();
         const accessUa = utilVisitor.getUserAgent(req, true);
         const accessIp = utilVisitor.getIPAddress(req);
@@ -535,6 +540,7 @@ router.patch("/passkeys",
                 userNickname,
                 userEmail,
                 sessionId,
+                accessMethod,
                 accessTm,
                 accessUa,
                 accessIp,

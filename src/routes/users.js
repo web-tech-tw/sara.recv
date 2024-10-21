@@ -408,6 +408,7 @@ router.patch("/me/email",
         const userNickname = userData.nickname;
 
         const sessionId = req.body.session_id;
+
         const accessTm = new Date().toISOString();
         const accessUa = utilVisitor.getUserAgent(req, true);
         const accessIp = utilVisitor.getIPAddress(req);
@@ -611,7 +612,9 @@ router.patch("/me/passkeys",
         const {registrationInfo} = verification;
         const {credential} = registrationInfo;
 
-        const label = utilVisitor.getUserAgent(req, true);
+        const labelPrefix = utilVisitor.getUserAgent(req, true);
+        const labelSuffix = utilNative.generateRandomCode(4);
+        const label = [labelPrefix, labelSuffix].join(" - ");
         user.passkeys.push({...credential, label});
 
         // Save user data

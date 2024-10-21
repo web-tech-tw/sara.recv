@@ -9,6 +9,8 @@ module.exports = {
         以下為授權成功的登入資訊：
             申請識別碼：
                 ${data.sessionId}
+            授權方法：
+                ${data.accessMethod}
             授權時間：
                 ${data.accessTm}
             授權目標裝置：
@@ -33,6 +35,10 @@ module.exports = {
                 <li>
                     申請識別碼：<br/>
                     ${data.sessionId}
+                </li>
+                <li>
+                    授權方法：<br/>
+                    ${data.accessMethod}
                 </li>
                 <li>
                     授權時間：<br/>
