@@ -526,7 +526,7 @@ router.patch("/passkeys",
 
         const sessionId = req.body.session_id;
 
-        const accessMethod = "Passkey";
+        const accessMethod = `Passkey (${passkey.label})`;
         const accessTm = new Date().toISOString();
         const accessUa = utilVisitor.getUserAgent(req, true);
         const accessIp = utilVisitor.getIPAddress(req);
