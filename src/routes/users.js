@@ -183,6 +183,7 @@ router.delete("/me",
         // Handle updates
         user.nickname = issuerIdentity;
         user.email = new Date().toISOString();
+        user.passkeys = [];
 
         // Update values
         await user.save();
