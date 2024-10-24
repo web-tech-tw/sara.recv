@@ -50,7 +50,7 @@ const cache = useCache();
  *     tags:
  *       - users
  *     security:
- *       - ApiKeyAuth: []
+ *       - XaraToken: []
  *     responses:
  *       200:
  *         description: User profile retrieved successfully
@@ -92,7 +92,7 @@ router.get("/me",
  *     tags:
  *       - users
  *     security:
- *       - ApiKeyAuth: []
+ *       - XaraToken: []
  *     requestBody:
  *       description: User object to be updated
  *       content:
@@ -158,7 +158,7 @@ router.put("/me",
  *     tags:
  *       - users
  *     security:
- *       - ApiKeyAuth: []
+ *       - XaraToken: []
  *     responses:
  *       204:
  *         description: User profile deleted successfully
@@ -206,7 +206,7 @@ router.delete("/me",
  *     tags:
  *       - users
  *     security:
- *       - ApiKeyAuth: []
+ *       - XaraToken: []
  *     requestBody:
  *       content:
  *         application/json:
@@ -328,7 +328,7 @@ router.put("/me/email",
  *     tags:
  *       - users
  *     security:
- *       - ApiKeyAuth: []
+ *       - XaraToken: []
  *     requestBody:
  *       required: true
  *       content:
@@ -444,6 +444,8 @@ router.patch("/me/email",
  *   post:
  *     tags:
  *       - users
+ *     security:
+ *       - XaraToken: []
  *     summary: Add a passkey to the user
  *     description: Issues a passkey session for a user
  *                  to add a passkey to their account.
@@ -528,6 +530,8 @@ router.post("/me/passkeys",
  *   patch:
  *     tags:
  *       - users
+ *     security:
+ *       - XaraToken: []
  *     summary: Verify user's passkey to add it into the account
  *     description: Verify user's passkey to add it into the account.
  *                  It also includes a restrictor middleware that limits
@@ -623,6 +627,128 @@ router.patch("/me/passkeys",
 
         // Send response
         res.sendStatus(StatusCodes.CREATED);
+    },
+);
+
+/**
+ * @openapi
+ * /users/me/passkeys/{passkey_id}:
+ *   put:
+ *     summary: Update user passkey details
+ *     description: Updates the authenticated user's passkey details.
+ *     tags:
+ *       - users
+ *     security:
+ *       - XaraToken: []
+ *     parameters:
+ *       - name: passkey_id
+ *         in: path
+ *         description: ID of the passkey to retrieve
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       description: Passkey object to be updated
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               label:
+ *                 type: string
+ *     responses:
+ *       204:
+ *         description: Passkey details updated successfully
+ *       404:
+ *         description: Passkey not found
+ */
+router.put("/me/passkeys/:passkey_id",
+    middlewareValidator.param("passkey_id").isString().notEmpty(),
+    middlewareValidator.body("label").isString().notEmpty(),
+    middlewareInspector,
+    middlewareAccess(null),
+    async (req, res) => {
+        // Check user exists by the ID
+        const user = await User.findById(req.auth.id).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Find passkey by ID
+        const passkeyId = req.params.passkey_id;
+        const passkey = user.passkeys.find(
+            (passkey) => passkey.id === passkeyId,
+        );
+        if (!passkey) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Handle updates
+        passkey.label = req.body.label;
+
+        // Save user data
+        await user.save();
+
+        // Send response
+        res.sendStatus(StatusCodes.NO_CONTENT);
+    },
+);
+
+/**
+ * @openapi
+ * /users/me/passkeys/{passkey_id}:
+ *   delete:
+ *     summary: Remove user passkey
+ *     description: Remove the authenticated user's passkey.
+ *     tags:
+ *       - users
+ *     security:
+ *       - XaraToken: []
+ *     parameters:
+ *       - name: passkey_id
+ *         in: path
+ *         description: ID of the passkey to retrieve
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       204:
+ *         description: Passkey removed successfully
+ *       404:
+ *         description: Passkey not found
+ */
+router.delete("/me/passkeys/:passkey_id",
+    middlewareValidator.param("passkey_id").isString().notEmpty(),
+    middlewareInspector,
+    middlewareAccess(null),
+    async (req, res) => {
+        // Check user exists by the ID
+        const user = await User.findById(req.auth.id).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Find passkey by ID
+        const passkeyId = req.params.passkey_id;
+        const passkeyIndex = user.passkeys.findIndex(
+            (passkey) => passkey.id === passkeyId,
+        );
+        if (passkeyIndex === -1) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Handle updates
+        user.passkeys.splice(passkeyIndex, 1);
+
+        // Save user data
+        await user.save();
+
+        // Send response
+        res.sendStatus(StatusCodes.NO_CONTENT);
     },
 );
 

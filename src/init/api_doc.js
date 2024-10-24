@@ -42,7 +42,7 @@ const options = {
         }],
         components: {
             securitySchemes: {
-                ApiKeyAuth: {
+                XaraToken: {
                     type: "apiKey",
                     in: "header",
                     name: "Authorization",

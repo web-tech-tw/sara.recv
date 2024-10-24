@@ -24,7 +24,7 @@ router.use(express.json());
  *     tags:
  *       - admin
  *     security:
- *       - ApiKeyAuth: []
+ *       - XaraToken: []
  *     parameters:
  *       - name: user_id
  *         in: path
@@ -75,7 +75,7 @@ router.get("/users/:user_id",
  *     tags:
  *       - admin
  *     security:
- *       - ApiKeyAuth: []
+ *       - XaraToken: []
  *     requestBody:
  *       required: true
  *       content:
@@ -145,7 +145,7 @@ router.post("/users/:user_id/roles",
  *     tags:
  *       - admin
  *     security:
- *       - ApiKeyAuth: []
+ *       - XaraToken: []
  *     parameters:
  *       - in: path
  *         name: user_id
