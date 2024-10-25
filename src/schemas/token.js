@@ -11,6 +11,7 @@ const schema = new Schema({
     },
 }, {
     timestamps: true,
+    expires: "1d",
 });
 
 module.exports = schema;
