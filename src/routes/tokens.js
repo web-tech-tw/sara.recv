@@ -79,14 +79,14 @@ router.head("/:token_id_prefix/:token_id_suffix",
         } = req.params;
 
         // Check token exists by the token ID
-        const token = await Token.findById(tokenIdPrefix).exec();
-        if (!token) {
+        const tokenState = await Token.findById(tokenIdPrefix).exec();
+        if (!tokenState) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
 
         // Find user by the user ID
-        const user = await User.findById(token.userId).exec();
+        const user = await User.findById(tokenState.userId).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;

@@ -21,6 +21,9 @@ const {
     usePrivateKey,
 } = require("../init/keypair");
 
+// Import user model
+const User = require("../models/user");
+
 // Import token model
 const Token = require("../models/token");
 
@@ -74,14 +77,14 @@ async function issue(userData) {
     };
 
     const userId = userData._id;
-    const userVersion = userData.revision;
+    const userRevision = userData.revision;
 
     const privateKey = usePrivateKey();
     const guardSecret = getMust("SARA_GUARD_SECRET");
 
     const token = new Token({userId});
     const tokenIdPrefix = (await token.save()).id;
-    const tokenIdSuffix = userVersion;
+    const tokenIdSuffix = userRevision;
     const tokenId = [
         tokenIdPrefix,
         tokenIdSuffix,
@@ -114,7 +117,7 @@ function update(token, userData) {
     };
 
     const userId = userData._id.toString();
-    const userVersion = userData.revision;
+    const userRevision = userData.revision;
 
     const publicKey = usePublicKey();
     const privateKey = usePrivateKey();
@@ -127,8 +130,6 @@ function update(token, userData) {
 
     const {payload: saraTokenPayload} =
         verify(originalSaraToken, publicKey, validateOptions);
-
-    console.log(userId, saraTokenPayload.sub);
 
     if (userId !== saraTokenPayload.sub) {
         throw new Error("unexpect user id");
@@ -148,11 +149,10 @@ function update(token, userData) {
     ] = saraTokenPayload.jti.split("/", 2);
     const tokenId = [
         originalTokenIdPrefix,
-        userVersion,
+        userRevision,
     ].join("/");
 
-    console.log(originalTokenIdSuffix, userVersion);
-    if (userVersion <= parseInt(originalTokenIdSuffix)) {
+    if (userRevision <= parseInt(originalTokenIdSuffix)) {
         throw new Error("unexpect user version");
     }
 
@@ -172,10 +172,11 @@ function update(token, userData) {
  * Validate token
  * @module sara_token
  * @function
+ * @async
  * @param {string} token - The token to valid.
- * @return {object}
+ * @return {Promise<object>}
  */
-function validate(token) {
+async function validate(token) {
     const publicKey = usePublicKey();
     const result = {
         userId: null,
@@ -193,6 +194,25 @@ function validate(token) {
         const guardTokenExpected = hmac256hex(payload.jti, guardSecret);
         if (guardToken !== guardTokenExpected) {
             throw new Error("unexpect guard token");
+        }
+
+        const [
+            tokenIdPrefix,
+            tokenIdSuffix,
+        ] = payload.jti.split("/", 2);
+
+        const tokenState = await Token.findById(tokenIdPrefix);
+        if (!tokenState) {
+            throw new Error("token not found");
+        }
+
+        const user = await User.findById(tokenState.userId);
+        if (!user) {
+            throw new Error("user not found");
+        }
+
+        if (user.revision !== parseInt(tokenIdSuffix)) {
+            throw new Error("user revision mismatch");
         }
 
         result.userId = payload.sub;
