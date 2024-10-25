@@ -240,10 +240,6 @@ router.delete("/me",
  *                   example: 62159db19d393b330e57ca63
  *       400:
  *         description: Invalid request body
- *       401:
- *         description: Unauthorized
- *       403:
- *         description: Rate limit exceeded
  *       409:
  *         description: Email address already in use
  *       500:
@@ -348,7 +344,7 @@ router.put("/me/email",
  *     responses:
  *       201:
  *         description: The email is updated successfully.
- *       401:
+ *       403:
  *         description: Invalid verification code or session ID.
  *       404:
  *         description: The user is not found.
@@ -367,7 +363,7 @@ router.patch("/me/email",
 
         if (metadata === null) {
             // Check metadata
-            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         } else {
             // Remove session
@@ -560,8 +556,8 @@ router.post("/me/passkeys",
  *       201:
  *         description: Returns a header named
  *                      "x-sara-refresh" that contains the access token.
- *       401:
- *         description: Returns "Unauthorized"
+ *       403:
+ *         description: Returns "Forbidden"
  *                      if the user's identity cannot be verified.
  *       404:
  *         description: Returns "Not Found" if the user cannot be found.
@@ -582,7 +578,7 @@ router.patch("/me/passkeys",
 
         if (metadata === null) {
             // Check metadata
-            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         } else {
             // Remove session
@@ -961,14 +957,14 @@ router.post("/",
  *             code: "1234567"
  *             session_id: "abc123"
  *     responses:
- *       '201':
+ *       201:
  *         description: Returns a 201 status code with
  *                      a 'x-sara-refresh' token in the header.
- *       '401':
- *         description: Returns a 401 status code
+ *       403:
+ *         description: Returns a 403 status code
  *                      if the provided code and session ID
  *                      do not match or are invalid.
- *       '409':
+ *       409:
  *         description: Returns a 409 status code if a user
  *                      with the provided email address already exists.
  */
@@ -985,7 +981,7 @@ router.patch("/",
 
         if (metadata === null) {
             // Check metadata
-            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         } else {
             // Remove session

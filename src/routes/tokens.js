@@ -250,8 +250,8 @@ router.post("/",
  *       201:
  *         description: Returns a header named
  *                      "x-sara-refresh" that contains the access token.
- *       401:
- *         description: Returns "Unauthorized"
+ *       403:
+ *         description: Returns "Forbidden"
  *                      if the user's identity cannot be verified.
  *       404:
  *         description: Returns "Not Found" if the user cannot be found.
@@ -269,7 +269,7 @@ router.patch("/",
 
         if (metadata === null) {
             // Check metadata
-            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         } else {
             // Remove session
@@ -473,8 +473,8 @@ router.post("/passkeys",
  *       201:
  *         description: Returns a header named
  *                      "x-sara-refresh" that contains the access token.
- *       401:
- *         description: Returns "Unauthorized"
+ *       403:
+ *         description: Returns "Forbidden"
  *                      if the user's identity cannot be verified.
  *       404:
  *         description: Returns "Not Found" if the user cannot be found.
@@ -491,7 +491,7 @@ router.patch("/passkeys",
 
         if (metadata === null) {
             // Check metadata
-            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         } else {
             // Remove session
@@ -525,12 +525,12 @@ router.patch("/passkeys",
             });
         } catch (error) {
             console.error(error);
-            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         }
 
         if (!verification.verified) {
-            res.sendStatus(StatusCodes.UNAUTHORIZED);
+            res.sendStatus(StatusCodes.FORBIDDEN);
             return;
         }
 
