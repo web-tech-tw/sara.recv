@@ -11,6 +11,7 @@ const {
 } = require("../init/const");
 
 const User = require("../models/user");
+const Token = require("../models/token");
 
 const {
     generateAuthenticationOptions,
@@ -38,38 +39,61 @@ const cache = useCache();
 
 /**
  * @openapi
- * /tokens/{token_id}:
+ * /tokens/{token_id_prefix}/{token_id_suffix}:
  *   head:
  *     summary: Validate a token is valid or not
  *     description: This endpoint is used to validate a token is valid or not.
  *     tags:
  *       - tokens
  *     parameters:
- *       - name: token_id
+ *       - name: token_id_prefix
  *         in: path
- *         description: ID of the token to retrieve
+ *         description: ID of the token to validate, included in jti.
  *         required: true
  *         schema:
  *           type: string
+ *           format: objectId
+ *       - name: token_id_suffix
+ *         in: path
+ *         description: Revision of the user to validate, included in jti.
+ *         required: true
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: Token is valid
+ *       400:
+ *         description: Token is malformed
  *       404:
  *         description: Token is invalid
  */
-router.head("/:token_id",
-    middlewareValidator.param("token_id").notEmpty(),
+router.head("/:token_id_prefix/:token_id_suffix",
+    middlewareValidator.param("token_id_prefix").isMongoId().notEmpty(),
+    middlewareValidator.param("token_id_suffix").isInt().notEmpty(),
     middlewareInspector,
-    middlewareRestrictor(10, 60, true, StatusCodes.NOT_FOUND),
     async (req, res) => {
         // Assign shortcuts
-        const tokenId = req.params.token_id;
+        const {
+            token_id_prefix: tokenIdPrefix,
+            token_id_suffix: tokenIdSuffix,
+        } = req.params;
 
-        // Print token ID
-        console.log("Token ID:", tokenId);
+        // Check token exists by the token ID
+        const token = await Token.findById(tokenIdPrefix).exec();
+        if (!token) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
 
-        // Check token ID
-        if (tokenId.startsWith("!")) {
+        // Find user by the user ID
+        const user = await User.findById(token.userId).exec();
+        if (!user) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
+
+        // Check token ID suffix
+        if (parseInt(tokenIdSuffix) !== user.revision) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
         }
@@ -274,7 +298,7 @@ router.patch("/",
         userData.avatar_hash = avatarHash;
 
         // Generate token
-        const token = utilXaraToken.
+        const token = await utilXaraToken.
             issue(userData);
 
         // Send response
@@ -360,7 +384,9 @@ router.patch("/",
  *                   type: string
  *                   description: The ID of the session.
  *       404:
- *         description: Returns "Not Found" if the user cannot be found.
+ *         description: Returns "Not Found"
+ *                      if the user cannot be found or
+ *                      the user has no passkeys.
  *       429:
  *         description: Returns "Too Many Requests"
  *                      if the rate limit is exceeded.
@@ -380,6 +406,12 @@ router.post("/passkeys",
         // Fetch audience variables
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
         const {hostname: audienceHost} = new URL(audienceUrl);
+
+        // Check user has passkeys
+        if (!user.passkeys.length) {
+            res.sendStatus(StatusCodes.NOT_FOUND);
+            return;
+        }
 
         // Fetch allowed credentials
         const allowCredentials = user.passkeys.map((passkey) => ({
@@ -511,7 +543,7 @@ router.patch("/passkeys",
         userData.avatar_hash = avatarHash;
 
         // Generate token
-        const token = utilXaraToken.
+        const token = await utilXaraToken.
             issue(userData);
 
         // Send response

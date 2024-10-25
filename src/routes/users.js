@@ -135,6 +135,9 @@ router.put("/me",
             return;
         }
 
+        // Increment revision
+        user.revision++;
+
         // Save user data
         const userData = (await user.save()).toObject();
 
@@ -390,6 +393,9 @@ router.patch("/me/email",
 
         user.email = userEmailUpdated;
 
+        // Increment revision
+        user.revision++;
+
         // Save user data
         const userData = (await user.save()).toObject();
 
@@ -643,7 +649,7 @@ router.patch("/me/passkeys",
  *     parameters:
  *       - name: passkey_id
  *         in: path
- *         description: ID of the passkey to retrieve
+ *         description: ID of the passkey to update
  *         required: true
  *         schema:
  *           type: string
@@ -709,7 +715,7 @@ router.put("/me/passkeys/:passkey_id",
  *     parameters:
  *       - name: passkey_id
  *         in: path
- *         description: ID of the passkey to retrieve
+ *         description: ID of the passkey to delete
  *         required: true
  *         schema:
  *           type: string
@@ -1004,7 +1010,7 @@ router.patch("/",
         userData.avatar_hash = avatarHash;
 
         // Generate token
-        const token = utilXaraToken.
+        const token = await utilXaraToken.
             issue(userData);
 
         // Send response

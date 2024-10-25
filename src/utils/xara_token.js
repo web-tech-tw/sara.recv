@@ -10,16 +10,19 @@ const {createHmac} = require("node:crypto");
 // Import jsonwebtoken
 const {sign, verify} = require("jsonwebtoken");
 
-// Import nanoid
-const {nanoid: generateNanoId} = require("nanoid");
-
 // Import const
 const {
     APP_NAME: issuerIdentity,
 } = require("../init/const");
 
 // Import usePublicKey and usePrivateKey
-const {usePublicKey, usePrivateKey} = require("../init/keypair");
+const {
+    usePublicKey,
+    usePrivateKey,
+} = require("../init/keypair");
+
+// Import token model
+const Token = require("../models/token");
 
 // Define hmac function - SHA256
 const hmac256hex = (data, key) =>
@@ -55,10 +58,11 @@ const validateOptions = {
  * Issue token
  * @module sara_token
  * @function
+ * @async
  * @param {object} userData - The user data to generate the token for.
- * @return {string}
+ * @return {Promise<string>}
  */
-function issue(userData) {
+async function issue(userData) {
     const user = {
         _id: userData._id,
         email: userData.email,
@@ -69,14 +73,23 @@ function issue(userData) {
         updated_at: userData.updated_at,
     };
 
+    const userId = userData._id;
+    const userVersion = userData.revision;
+
     const privateKey = usePrivateKey();
-
-    const saraTokenId = generateNanoId();
-    const saraTokenPayload = {user, sub: user._id, jti: saraTokenId};
-    const saraToken = sign(saraTokenPayload, privateKey, issueOptions);
-
     const guardSecret = getMust("SARA_GUARD_SECRET");
-    const guardToken = hmac256hex(saraTokenId, guardSecret);
+
+    const token = new Token({userId});
+    const tokenIdPrefix = (await token.save()).id;
+    const tokenIdSuffix = userVersion;
+    const tokenId = [
+        tokenIdPrefix,
+        tokenIdSuffix,
+    ].join("/");
+
+    const saraTokenPayload = {user, sub: userId, jti: tokenId};
+    const saraToken = sign(saraTokenPayload, privateKey, issueOptions);
+    const guardToken = hmac256hex(tokenId, guardSecret);
 
     return [saraToken, guardToken].join("|");
 }
@@ -86,24 +99,71 @@ function issue(userData) {
  * @module sara_token
  * @function
  * @param {object} token - The token to update.
- * @param {object} user - The user data to update.
+ * @param {object} userData - The user data to update.
  * @return {string}
  */
-function update(token, user) {
+function update(token, userData) {
+    const user = {
+        _id: userData._id,
+        email: userData.email,
+        nickname: userData.nickname,
+        avatar_hash: userData.avatar_hash,
+        roles: userData.roles,
+        created_at: userData.created_at,
+        updated_at: userData.updated_at,
+    };
+
+    const userId = userData._id.toString();
+    const userVersion = userData.revision;
+
     const publicKey = usePublicKey();
     const privateKey = usePrivateKey();
+    const guardSecret = getMust("SARA_GUARD_SECRET");
 
-    const [originalSaraToken, guardToken] = token.split("|", 2);
-    const {payload: saraTokenPayload} = verify(
-        originalSaraToken, publicKey, validateOptions,
+    const [
+        originalSaraToken,
+        originalGuardToken,
+    ] = token.split("|", 2);
+
+    const {payload: saraTokenPayload} =
+        verify(originalSaraToken, publicKey, validateOptions);
+
+    console.log(userId, saraTokenPayload.sub);
+
+    if (userId !== saraTokenPayload.sub) {
+        throw new Error("unexpect user id");
+    }
+
+    const expectedOriginalGuardToken = hmac256hex(
+        saraTokenPayload.jti,
+        guardSecret,
     );
+    if (originalGuardToken !== expectedOriginalGuardToken) {
+        throw new Error("unexpect guard token");
+    }
+
+    const [
+        originalTokenIdPrefix,
+        originalTokenIdSuffix,
+    ] = saraTokenPayload.jti.split("/", 2);
+    const tokenId = [
+        originalTokenIdPrefix,
+        userVersion,
+    ].join("/");
+
+    console.log(originalTokenIdSuffix, userVersion);
+    if (userVersion <= parseInt(originalTokenIdSuffix)) {
+        throw new Error("unexpect user version");
+    }
+
+    saraTokenPayload.jti = tokenId;
     saraTokenPayload.user = {
         ...saraTokenPayload.user,
         ...user,
     };
-    const saraToken = sign(
-        saraTokenPayload, privateKey, updateOptions,
-    );
+
+    const saraToken = sign(saraTokenPayload, privateKey, updateOptions);
+    const guardToken = hmac256hex(tokenId, guardSecret);
 
     return [saraToken, guardToken].join("|");
 }

@@ -19,6 +19,10 @@ const schema = new Schema({
         type: [String],
         default: [],
     },
+    revision: {
+        type: Number,
+        default: 0,
+    },
     passkeys: {
         type: [Passkey],
         default: [],
