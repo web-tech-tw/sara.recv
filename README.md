@@ -50,7 +50,7 @@ openssl rand -base64 36
     
 ### 生成憑證公鑰與私鑰
 
-用於生成憑證公鑰與私鑰，作為 JWT 加密使用。
+用於生成憑證公鑰與私鑰，作為 JWT 簽名使用。
     
 ```sh
 openssl ecparam -name prime256v1 -genkey -noout -out "keypair_private.pem"
