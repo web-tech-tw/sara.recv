@@ -17,9 +17,9 @@ const {useCache} = require("../../src/init/cache");
 function print(...messages) {
     if (isProduction()) return;
     const timestamp = new Date().toString();
-    console.timeStamp(
+    console.info(
         "---\n",
-        "[!] *Test mode*\n",
+        "[!] *Test Message*\n",
         `[!] ${timestamp}\n`,
         ...messages,
     );
