@@ -39,37 +39,37 @@ describe("/users", function() {
     });
 
     step("register", function(done) {
-        request(app)
-            .post(to("/"))
-            .send(fakeUser)
-            .type("json")
-            .set("Accept", "application/json")
-            .expect(StatusCodes.CREATED)
-            .then((res) => {
+        request(app).
+            post(to("/")).
+            send(fakeUser).
+            type("json").
+            set("Accept", "application/json").
+            expect(StatusCodes.CREATED).
+            then((res) => {
                 cache.set("_testing_session_id", res.body.session_id);
                 utils.log(res.body);
                 done();
-            })
-            .catch((e) => {
+            }).
+            catch((e) => {
                 utils.log(e);
                 done(e);
             });
     });
 
     step("verify register", function(done) {
-        request(app)
-            .patch(to("/"))
-            .send({
+        request(app).
+            patch(to("/")).
+            send({
                 session_id: cache.take("_testing_session_id"),
                 code: cache.take("_testing_code"),
-            })
-            .type("json")
-            .expect(StatusCodes.CREATED)
-            .then((res) => {
+            }).
+            type("json").
+            expect(StatusCodes.CREATED).
+            then((res) => {
                 utils.log(headerRefreshToken, res.headers[headerRefreshToken]);
                 done();
-            })
-            .catch((e) => {
+            }).
+            catch((e) => {
                 utils.log(e);
                 done(e);
             });

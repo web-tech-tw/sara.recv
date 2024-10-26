@@ -44,21 +44,21 @@ async function registerFakeUser(userData) {
     const app = useApp();
     const cache = useCache();
 
-    const verifyResponse = await request(app)
-        .post("/users")
-        .send(userData)
-        .type("json")
-        .expect(StatusCodes.CREATED);
+    const verifyResponse = await request(app).
+        post("/users").
+        send(userData).
+        type("json").
+        expect(StatusCodes.CREATED);
 
     const {session_id: sessionCode} = verifyResponse.body;
-    const statusResponse = await request(app)
-        .patch("/users")
-        .send({
+    const statusResponse = await request(app).
+        patch("/users").
+        send({
             session_id: sessionCode,
             code: cache.take("_testing_code"),
-        })
-        .type("json")
-        .expect(StatusCodes.CREATED);
+        }).
+        type("json").
+        expect(StatusCodes.CREATED);
 
     return statusResponse.status === StatusCodes.CREATED;
 }

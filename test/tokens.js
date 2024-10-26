@@ -40,38 +40,38 @@ describe("/tokens", function() {
     });
 
     step("login", function(done) {
-        request(app)
-            .post(to("/"))
-            .send({email: fakeUser.email})
-            .type("json")
-            .set("Accept", "application/json")
-            .expect(StatusCodes.CREATED)
-            .then((res) => {
+        request(app).
+            post(to("/")).
+            send({email: fakeUser.email}).
+            type("json").
+            set("Accept", "application/json").
+            expect(StatusCodes.CREATED).
+            then((res) => {
                 cache.set("_testing_session_id", res.body.session_id);
                 done();
-            })
-            .catch((e) => {
+            }).
+            catch((e) => {
                 console.error(e);
                 done(e);
             });
     });
 
     step("login verify", function(done) {
-        request(app)
-            .patch(to("/"))
-            .send({
+        request(app).
+            patch(to("/")).
+            send({
                 session_id: cache.take("_testing_session_id"),
                 code: cache.take("_testing_code"),
-            })
-            .type("json")
-            .set("Accept", "text/plain")
-            .expect("Content-Type", /plain/)
-            .expect(StatusCodes.CREATED)
-            .then((res) => {
+            }).
+            type("json").
+            set("Accept", "text/plain").
+            expect("Content-Type", /plain/).
+            expect(StatusCodes.CREATED).
+            then((res) => {
                 utils.log(headerRefreshToken, res.headers[headerRefreshToken]);
                 done();
-            })
-            .catch((e) => {
+            }).
+            catch((e) => {
                 console.error(e);
                 done(e);
             });
