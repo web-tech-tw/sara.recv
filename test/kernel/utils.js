@@ -11,15 +11,60 @@ const {useApp} = require("../../src/init/express");
 const {useCache} = require("../../src/init/cache");
 
 /**
- * Run prepare handlers.
- * @return {object}
+ * Print message with testing notification.
+ * @param {any} messages
  */
-async function runPrepareHandlers(...prepareHandlers) {
-    // Waiting for prepare handlers
-    if (prepareHandlers.length > 0) {
-        const preparingPromises = prepareHandlers.map((c) => c());
-        await Promise.all(preparingPromises);
-    }
+function print(...messages) {
+    if (isProduction()) return;
+    const timestamp = new Date().toString();
+    console.timeStamp(
+        "---\n",
+        "[!] *Test mode*\n",
+        `[!] ${timestamp}\n`,
+        ...messages,
+    );
+}
+
+/**
+ * Create a helper to merge base URL and path.
+ * @param {string} baseUrl - The base URL
+ * @return {function(string)}
+ */
+function urlGlue(baseUrl) {
+    return (path) => baseUrl + path;
+}
+
+/**
+ * Return a function to run a task with arguments.
+ * @param {function} task
+ * @return {any}
+ */
+function toTest(task, ...args) {
+    return async function() {
+        try {
+            await task(...args);
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
+}
+
+/**
+ * Run prepare handlers.
+ * @param {function[]} handlers
+ * @return {function}
+ */
+function toPrepare(...handlers) {
+    return async function() {
+        try {
+            const promises = handlers.map((c) => c());
+            await Promise.all(promises);
+        } catch (error) {
+            console.error(error);
+            throw error;
+        }
+    };
 }
 
 /**
@@ -27,12 +72,13 @@ async function runPrepareHandlers(...prepareHandlers) {
  * @return {object}
  */
 function generateFakeUser() {
-    const sessionCode = `testing_${generateNanoId()}`;
+    const userSerial = generateNanoId();
+    const userId = `testing_${userSerial}`;
 
-    return {
-        nickname: `Sara Hoshikawa - ${sessionCode}`,
-        email: `sara_${sessionCode}@web-tech-tw.github.io`,
-    };
+    const nickname = `Sara Hoshikawa - ${userId}`;
+    const email = `sara_${userId}@web-tech-tw.github.io`;
+
+    return {nickname, email};
 }
 
 /**
@@ -46,45 +92,32 @@ async function registerFakeUser(userData) {
 
     const verifyResponse = await request(app).
         post("/users").
-        send(userData).
         type("json").
-        expect(StatusCodes.CREATED);
+        send(userData).
+        expect(StatusCodes.CREATED).
+        expect("Content-Type", /json/);
 
-    const {session_id: sessionCode} = verifyResponse.body;
+    const {session_id: sessionId} = verifyResponse.body;
+    const sessionCode = cache.take("_testing_code");
+
     const statusResponse = await request(app).
         patch("/users").
-        send({
-            session_id: sessionCode,
-            code: cache.take("_testing_code"),
-        }).
         type("json").
-        expect(StatusCodes.CREATED);
+        send({
+            session_id: sessionId,
+            code: sessionCode,
+        }).
+        expect(StatusCodes.CREATED).
+        expect("Content-Type", /plain/);
 
     return statusResponse.status === StatusCodes.CREATED;
 }
 
-/**
- * Print message with testing notification.
- * @param {any} messages
- */
-function log(...messages) {
-    if (isProduction()) return;
-    console.info("[!] Test mode:", ...messages);
-}
-
-/**
- * Create a helper to merge base URL and path.
- * @param {string} baseUrl - The base URL
- * @return {function(string)}
- */
-function urlGlue(baseUrl) {
-    return (path) => baseUrl + path;
-}
-
 module.exports = {
-    runPrepareHandlers,
+    print,
+    urlGlue,
+    toTest,
+    toPrepare,
     generateFakeUser,
     registerFakeUser,
-    log,
-    urlGlue,
 };

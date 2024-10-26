@@ -2,7 +2,13 @@
 
 require("./kernel/init");
 
-const utils = require("./kernel/utils");
+const {
+    print,
+    urlGlue,
+    toTest,
+    toPrepare,
+    generateFakeUser,
+} = require("./kernel/utils");
 
 const request = require("supertest");
 const {step} = require("mocha-steps");
@@ -25,53 +31,52 @@ const app = useApp();
 const cache = useCache();
 
 const routerDispatcher = require("../src/routes/index");
-const to = utils.urlGlue("/users");
+const to = urlGlue("/users");
 routerDispatcher.load();
 
 // Define tests
 describe("/users", function() {
-    const fakeUser = utils.generateFakeUser();
+    const fakeUser = generateFakeUser();
 
-    before(async () => {
-        await utils.runPrepareHandlers(
-            prepareDatabase,
-        );
-    });
+    before(toPrepare(
+        prepareDatabase,
+    ));
 
-    step("register", function(done) {
-        request(app).
+    step("register", toTest(async function() {
+        const response = await request(app).
             post(to("/")).
+            type("json").
             send(fakeUser).
-            type("json").
-            set("Accept", "application/json").
             expect(StatusCodes.CREATED).
-            then((res) => {
-                cache.set("_testing_session_id", res.body.session_id);
-                utils.log(res.body);
-                done();
-            }).
-            catch((e) => {
-                utils.log(e);
-                done(e);
-            });
-    });
+            expect("Content-Type", /json/);
 
-    step("verify register", function(done) {
-        request(app).
+        const {
+            session_id: sessionId,
+        } = response.body;
+
+        cache.set("_testing_session_id", sessionId);
+
+        print(response.body);
+    }));
+
+    step("verify register", toTest(async function() {
+        const code = cache.take("_testing_code");
+        const sessionId = cache.take("_testing_session_id");
+
+        const response = await request(app).
             patch(to("/")).
-            send({
-                session_id: cache.take("_testing_session_id"),
-                code: cache.take("_testing_code"),
-            }).
             type("json").
-            expect(StatusCodes.CREATED).
-            then((res) => {
-                utils.log(headerRefreshToken, res.headers[headerRefreshToken]);
-                done();
+            send({
+                code: code,
+                session_id: sessionId,
             }).
-            catch((e) => {
-                utils.log(e);
-                done(e);
-            });
-    });
+            expect(StatusCodes.CREATED).
+            expect("Content-Type", /plain/);
+
+        const {
+            [headerRefreshToken]: refreshToken,
+        } = response.headers;
+
+        print(refreshToken);
+    }));
 });
