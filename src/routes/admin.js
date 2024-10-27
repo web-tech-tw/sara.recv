@@ -1,7 +1,7 @@
 "use strict";
 
 const {StatusCodes} = require("http-status-codes");
-const {useApp, express} = require("../init/express");
+const {useApp, withAwait, express} = require("../init/express");
 
 const User = require("../models/user");
 
@@ -47,7 +47,7 @@ router.get("/users/:user_id",
     middlewareAccess("admin"),
     middlewareValidator.param("user_id").isMongoId().notEmpty(),
     middlewareInspector,
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Assign shortcuts
         const userId = req.params.user_id;
 
@@ -63,7 +63,7 @@ router.get("/users/:user_id",
 
         // Send response
         res.send(userData);
-    },
+    }),
 );
 
 /**
@@ -106,7 +106,7 @@ router.post("/users/:user_id/roles",
     middlewareValidator.param("user_id").isMongoId().notEmpty(),
     middlewareValidator.body("role_name").isString().notEmpty(),
     middlewareInspector,
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Assign shortcuts
         const userId = req.params.user_id;
         const roleName = req.body.role_name;
@@ -133,7 +133,7 @@ router.post("/users/:user_id/roles",
 
         // Send response
         res.sendStatus(StatusCodes.CREATED);
-    },
+    }),
 );
 
 /**
@@ -173,7 +173,7 @@ router.delete("/users/:user_id/roles/:role_name",
     middlewareValidator.param("user_id").isMongoId().notEmpty(),
     middlewareValidator.param("role_name").isString().notEmpty(),
     middlewareInspector,
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Assign shortcuts
         const userId = req.params.user_id;
         const roleName = req.body.role_name;
@@ -200,7 +200,7 @@ router.delete("/users/:user_id/roles/:role_name",
 
         // Send response
         res.sendStatus(StatusCodes.NO_CONTENT);
-    },
+    }),
 );
 
 // Export routes mapper (function)

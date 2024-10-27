@@ -3,7 +3,7 @@
 const {getMust} = require("../config");
 
 const {StatusCodes} = require("http-status-codes");
-const {useApp, express} = require("../init/express");
+const {useApp, withAwait, express} = require("../init/express");
 const {useCache} = require("../init/cache");
 
 const {
@@ -64,7 +64,7 @@ const cache = useCache();
  */
 router.get("/me",
     middlewareAccess(null),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         const userId = req.auth.id;
 
         const user = await User.findById(userId).exec();
@@ -80,7 +80,7 @@ router.get("/me",
         profile.avatar_hash = avatarHash;
 
         res.send({profile});
-    },
+    }),
 );
 
 /**
@@ -117,7 +117,7 @@ router.get("/me",
  */
 router.put("/me",
     middlewareAccess(null),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Check user exists by the ID
         const user = await User.findById(req.auth.id).exec();
         if (!user) {
@@ -149,7 +149,7 @@ router.put("/me",
         res.
             header(headerRefreshToken, token).
             sendStatus(StatusCodes.CREATED);
-    },
+    }),
 );
 
 /**
@@ -175,7 +175,7 @@ router.put("/me",
  */
 router.delete("/me",
     middlewareAccess(null),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Check user exists by the ID
         const user = await User.findById(req.auth.id).exec();
         if (!user) {
@@ -195,7 +195,7 @@ router.delete("/me",
         res.
             header(headerRefreshToken, "|").
             sendStatus(StatusCodes.NO_CONTENT);
-    },
+    }),
 );
 
 /**
@@ -250,7 +250,7 @@ router.put("/me/email",
     middlewareValidator.body("email").isEmail().notEmpty(),
     middlewareInspector,
     middlewareRestrictor(10, 60, false, StatusCodes.CONFLICT),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Handle code and metadata
         const metadata = {
             userId: req.auth.id,
@@ -313,7 +313,7 @@ router.put("/me/email",
                 session_ua: sessionUa,
                 session_tm: sessionTm,
             });
-    },
+    }),
 );
 
 /**
@@ -356,7 +356,7 @@ router.patch("/me/email",
     middlewareValidator.body("session_id").isString().notEmpty(),
     middlewareInspector,
     middlewareRestrictor(10, 60, false),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
             getOne("create_email", req.body.session_id, req.body.code);
@@ -436,7 +436,7 @@ router.patch("/me/email",
             res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
             return;
         }
-    },
+    }),
 );
 
 
@@ -477,7 +477,7 @@ router.patch("/me/email",
  */
 router.post("/me/passkeys",
     middlewareAccess(null),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Fetch audience variables
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
         const {hostname: audienceHost} = new URL(audienceUrl);
@@ -523,7 +523,7 @@ router.post("/me/passkeys",
                 session_id: sessionId,
                 session_options: sessionOptions,
             });
-    },
+    }),
 );
 
 /**
@@ -567,7 +567,7 @@ router.patch("/me/passkeys",
     middlewareValidator.body("session_id").isString().notEmpty(),
     middlewareValidator.body("credential").isObject().notEmpty(),
     middlewareInspector,
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Fetch audience variables
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
         const {hostname: audienceHost} = new URL(audienceUrl);
@@ -629,7 +629,7 @@ router.patch("/me/passkeys",
 
         // Send response
         res.sendStatus(StatusCodes.CREATED);
-    },
+    }),
 );
 
 /**
@@ -669,7 +669,7 @@ router.put("/me/passkeys/:passkey_id",
     middlewareValidator.body("label").isString().notEmpty(),
     middlewareInspector,
     middlewareAccess(null),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Check user exists by the ID
         const user = await User.findById(req.auth.id).exec();
         if (!user) {
@@ -695,7 +695,7 @@ router.put("/me/passkeys/:passkey_id",
 
         // Send response
         res.sendStatus(StatusCodes.NO_CONTENT);
-    },
+    }),
 );
 
 /**
@@ -725,7 +725,7 @@ router.delete("/me/passkeys/:passkey_id",
     middlewareValidator.param("passkey_id").isString().notEmpty(),
     middlewareInspector,
     middlewareAccess(null),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Check user exists by the ID
         const user = await User.findById(req.auth.id).exec();
         if (!user) {
@@ -751,7 +751,7 @@ router.delete("/me/passkeys/:passkey_id",
 
         // Send response
         res.sendStatus(StatusCodes.NO_CONTENT);
-    },
+    }),
 );
 
 /**
@@ -789,7 +789,7 @@ router.get("/:user_id",
     middlewareValidator.param("user_id").isMongoId().notEmpty(),
     middlewareInspector,
     middlewareRestrictor(10, 60, true, StatusCodes.NOT_FOUND),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Assign shortcuts
         const userId = req.params.user_id;
 
@@ -813,7 +813,7 @@ router.get("/:user_id",
                 avatar_hash: avatarHash,
             },
         });
-    },
+    }),
 );
 
 /**
@@ -860,7 +860,7 @@ router.post("/",
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
     middlewareRestrictor(20, 3600, false, StatusCodes.CONFLICT),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Handle code and metadata
         const metadata = {
             nickname: req.body.nickname,
@@ -925,7 +925,7 @@ router.post("/",
                 session_ua: sessionUa,
                 session_tm: sessionTm,
             });
-    },
+    }),
 );
 
 /**
@@ -974,7 +974,7 @@ router.patch("/",
     middlewareValidator.body("session_id").notEmpty(),
     middlewareInspector,
     middlewareRestrictor(20, 3600, false),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
             getOne(sessionTypeCreateUser, req.body.session_id, req.body.code);
@@ -1044,7 +1044,7 @@ router.patch("/",
             res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
             return;
         }
-    },
+    }),
 );
 
 // Export routes mapper (function)

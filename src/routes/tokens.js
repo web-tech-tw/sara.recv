@@ -2,7 +2,7 @@
 
 const {getMust} = require("../config");
 const {StatusCodes} = require("http-status-codes");
-const {useApp, express} = require("../init/express");
+const {useApp, withAwait, express} = require("../init/express");
 const {useCache} = require("../init/cache");
 
 const {
@@ -71,7 +71,7 @@ router.head("/:token_id_prefix/:token_id_suffix",
     middlewareValidator.param("token_id_prefix").isMongoId().notEmpty(),
     middlewareValidator.param("token_id_suffix").isInt().notEmpty(),
     middlewareInspector,
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Assign shortcuts
         const {
             token_id_prefix: tokenIdPrefix,
@@ -100,7 +100,7 @@ router.head("/:token_id_prefix/:token_id_suffix",
 
         // Return response
         res.sendStatus(StatusCodes.OK);
-    },
+    }),
 );
 
 /**
@@ -153,7 +153,7 @@ router.post("/",
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
     middlewareRestrictor(10, 3600, false, StatusCodes.NOT_FOUND),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Check user exists by the email address
         const user = await User.findOne({email: req.body.email}).exec();
         if (!user) {
@@ -216,7 +216,7 @@ router.post("/",
                 session_ua: sessionUa,
                 session_tm: sessionTm,
             });
-    },
+    }),
 );
 
 /**
@@ -262,7 +262,7 @@ router.patch("/",
     middlewareValidator.body("session_id").notEmpty(),
     middlewareInspector,
     middlewareRestrictor(10, 3600, false),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Get metadata back by the code
         const metadata = utilCodeSession.
             getOne("create_token", req.body.session_id, req.body.code);
@@ -339,7 +339,7 @@ router.patch("/",
             res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
             return;
         }
-    },
+    }),
 );
 
 /**
@@ -395,7 +395,7 @@ router.post("/passkeys",
     middlewareValidator.body("email").isEmail(),
     middlewareInspector,
     middlewareRestrictor(10, 3600, false),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Check user exists by the email address
         const user = await User.findOne({email: req.body.email}).exec();
         if (!user) {
@@ -439,7 +439,7 @@ router.post("/passkeys",
                 session_id: sessionId,
                 session_options: sessionOptions,
             });
-    },
+    }),
 );
 
 /**
@@ -484,7 +484,7 @@ router.patch("/passkeys",
     middlewareValidator.body("credential").isObject().notEmpty(),
     middlewareInspector,
     middlewareRestrictor(10, 3600, false),
-    async (req, res) => {
+    withAwait(async (req, res) => {
         // Get metadata back by the session ID
         const metadata = utilPasskeySession.
             getOne("create_token", req.body.session_id);
@@ -582,7 +582,7 @@ router.patch("/passkeys",
             res.sendStatus(StatusCodes.INTERNAL_SERVER_ERROR);
             return;
         }
-    },
+    }),
 );
 
 // Export routes mapper (function)
