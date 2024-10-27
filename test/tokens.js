@@ -1,6 +1,8 @@
 "use strict";
 
-require("./kernel/init");
+const {
+    USER_AGENT: userAgent,
+} = require("./kernel/init");
 
 const {
     print,
@@ -48,18 +50,20 @@ describe("/tokens", function() {
     step("login", toTest(async function() {
         const response = await request(app).
             post(to("/")).
+            set("user-agent", userAgent).
             type("json").
             send({email: fakeUser.email}).
             expect(StatusCodes.CREATED).
-            expect("Content-Type", /json/);
+            expect("content-type", /json/);
 
         const {
             session_id: sessionId,
         } = response.body;
 
+        const code = cache.get("_testing_code");
         cache.set("_testing_session_id", sessionId);
 
-        print(response.body);
+        print(code, response.body);
     }));
 
     step("login verify", toTest(async function() {
@@ -68,13 +72,14 @@ describe("/tokens", function() {
 
         const response = await request(app).
             patch(to("/")).
+            set("user-agent", userAgent).
             type("json").
             send({
                 code: code,
                 session_id: sessionId,
             }).
             expect(StatusCodes.CREATED).
-            expect("Content-Type", /plain/);
+            expect("content-type", /plain/);
 
         const {
             [headerRefreshToken]: refreshToken,

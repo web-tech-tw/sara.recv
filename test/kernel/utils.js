@@ -1,5 +1,9 @@
 "use strict";
 
+const {
+    USER_AGENT: userAgent,
+} = require("./init");
+
 const {isProduction} = require("../../src/config");
 
 const {nanoid: generateNanoId} = require("nanoid");
@@ -92,23 +96,25 @@ async function registerFakeUser(userData) {
 
     const verifyResponse = await request(app).
         post("/users").
+        set("user-agent", userAgent).
         type("json").
         send(userData).
         expect(StatusCodes.CREATED).
-        expect("Content-Type", /json/);
+        expect("content-type", /json/);
 
     const {session_id: sessionId} = verifyResponse.body;
     const sessionCode = cache.take("_testing_code");
 
     const statusResponse = await request(app).
         patch("/users").
+        set("user-agent", userAgent).
         type("json").
         send({
             session_id: sessionId,
             code: sessionCode,
         }).
         expect(StatusCodes.CREATED).
-        expect("Content-Type", /plain/);
+        expect("content-type", /plain/);
 
     return statusResponse.status === StatusCodes.CREATED;
 }
