@@ -251,16 +251,19 @@ router.put("/me/email",
     middlewareInspector,
     middlewareRestrictor(10, 60, false, StatusCodes.CONFLICT),
     withAwait(async (req, res) => {
+        // Let email address be case-insensitive
+        const email = req.body.email.toLowerCase();
+
         // Handle code and metadata
         const metadata = {
             userId: req.auth.id,
-            email: req.body.email,
+            email,
         };
         const {code, sessionId} = utilCodeSession.
             createOne("create_email", metadata, 8, 1800);
 
         // Handle conflict
-        if (await User.findOne({email: req.body.email}).exec()) {
+        if (await User.findOne({email}).exec()) {
             res.sendStatus(StatusCodes.CONFLICT);
             return;
         }
@@ -861,10 +864,13 @@ router.post("/",
     middlewareInspector,
     middlewareRestrictor(20, 3600, false, StatusCodes.CONFLICT),
     withAwait(async (req, res) => {
+        // Let email address be case-insensitive
+        const email = req.body.email.toLowerCase();
+
         // Handle code and metadata
         const metadata = {
             nickname: req.body.nickname,
-            email: req.body.email,
+            email,
             created_at: Date.now(),
             updated_at: Date.now(),
         };
@@ -910,7 +916,7 @@ router.post("/",
         }
 
         // Handle conflict
-        if (await User.findOne({email: req.body.email}).exec()) {
+        if (await User.findOne({email}).exec()) {
             res.sendStatus(StatusCodes.CONFLICT);
             return;
         }

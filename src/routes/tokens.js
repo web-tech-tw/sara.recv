@@ -154,8 +154,11 @@ router.post("/",
     middlewareInspector,
     middlewareRestrictor(10, 3600, false, StatusCodes.NOT_FOUND),
     withAwait(async (req, res) => {
+        // Let email address be case-insensitive
+        const email = req.body.email.toLowerCase();
+
         // Check user exists by the email address
-        const user = await User.findOne({email: req.body.email}).exec();
+        const user = await User.findOne({email}).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
@@ -396,8 +399,11 @@ router.post("/passkeys",
     middlewareInspector,
     middlewareRestrictor(10, 3600, false),
     withAwait(async (req, res) => {
+        // Let email address be case-insensitive
+        const email = req.body.email.toLowerCase();
+
         // Check user exists by the email address
-        const user = await User.findOne({email: req.body.email}).exec();
+        const user = await User.findOne({email}).exec();
         if (!user) {
             res.sendStatus(StatusCodes.NOT_FOUND);
             return;
