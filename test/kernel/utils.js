@@ -79,8 +79,8 @@ function generateFakeUser() {
     const userSerial = generateNanoId();
     const userId = `testing_${userSerial}`;
 
-    const nickname = `Sara Hoshikawa - ${userId}`;
-    const email = `sara_${userId}@web-tech-tw.github.io`;
+    const nickname = `Fake User - ${userId}`;
+    const email = `fake_user_${userId}@web-tech-tw.github.io`;
 
     return {nickname, email};
 }

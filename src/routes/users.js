@@ -845,7 +845,7 @@ router.get("/:user_id",
  *                 type: string
  *           example:
  *             nickname: JohnDoe
- *             email: johndoe@example.com
+ *             email: fake_user@web-tech-tw.github.io
  *     responses:
  *       201:
  *         description: Returns the session ID

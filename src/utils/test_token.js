@@ -4,11 +4,15 @@
 // Import config
 const {isProduction} = require("../config");
 
+// Import utils
+const {sha256hex} = require("./native");
+
+// Default fake user
 const DEFAULT_FAKE_USER = {
     _id: "67345206787c5d2b9be61c37",
-    nickname: "The Fake User",
-    email: "the_fake_user@web-tech-tw.github.io",
-    avatar_hash: "fake_user",
+    nickname: "Fake User",
+    email: "fake_user@web-tech-tw.github.io",
+    avatar_hash: sha256hex("fake_user@web-tech-tw.github.io"),
     roles: [],
 };
 

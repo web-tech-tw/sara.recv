@@ -126,7 +126,7 @@ router.head("/:token_id_prefix/:token_id_suffix",
  *                 type: string
  *                 description: The email address of the user.
  *                 format: email
- *                 example: test@example.org
+ *                 example: fake_user@web-tech-tw.github.io
  *     responses:
  *       201:
  *         description: Returns a session ID for the user
@@ -369,7 +369,7 @@ router.patch("/",
  *                 type: string
  *                 description: The email address of the user.
  *                 format: email
- *                 example: test@example.org
+ *                 example: fake_user@web-tech-tw.github.io
  *     responses:
  *       201:
  *         description: Returns a session ID for the user
