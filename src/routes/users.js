@@ -844,7 +844,7 @@ router.get("/:user_id",
  *               email:
  *                 type: string
  *           example:
- *             nickname: JohnDoe
+ *             nickname: Fake User
  *             email: fake_user@web-tech-tw.github.io
  *     responses:
  *       201:
