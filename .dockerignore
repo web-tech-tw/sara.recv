@@ -1,0 +1,34 @@
+# App config files (must be mounted at runtime)
+keypair_*.pem
+.env
+
+# macOS
+.DS_Store
+
+# Build artifacts
+node_modules
+dist
+coverage
+.nyc_output
+openapi_exported.json
+
+# Editor
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Debug logs
+*.log
+
+# Git
+.git
+.github
+.gitignore
+.husky
+
+# Test files (not needed in production image)
+test/
