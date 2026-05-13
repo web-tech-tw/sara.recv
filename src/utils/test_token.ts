@@ -1,6 +1,6 @@
 // Token utils for testing/debugging or developing.
-import { isProduction } from "../config";
-import { sha256hex } from "./native";
+import {isProduction} from "../config";
+import {sha256hex} from "./native";
 
 // Default fake user
 const DEFAULT_FAKE_USER = {
@@ -13,6 +13,7 @@ const DEFAULT_FAKE_USER = {
 
 /**
  * Returns a new user profile
+ * @return {object} The fake user profile.
  */
 export function newProfile() {
     return structuredClone(DEFAULT_FAKE_USER);
@@ -20,22 +21,24 @@ export function newProfile() {
 
 /**
  * Issue token
+ * @param {any} userData - The user data.
+ * @return {string} The issued token.
  */
 export function issue(userData?: any): string {
     if (isProduction()) {
         throw new Error("test_token is not allowed in production");
     }
 
-    userData = userData || DEFAULT_FAKE_USER;
+    const data = userData || DEFAULT_FAKE_USER;
 
     const user = {
-        _id: userData._id,
-        email: userData.email,
-        nickname: userData.nickname,
-        avatar_hash: userData.avatar_hash,
-        roles: userData.roles,
-        created_at: userData.created_at,
-        updated_at: userData.updated_at,
+        _id: data._id,
+        email: data.email,
+        nickname: data.nickname,
+        avatar_hash: data.avatar_hash,
+        roles: data.roles,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
     };
 
     const userJson = JSON.stringify(user);
@@ -46,6 +49,8 @@ export function issue(userData?: any): string {
 
 /**
  * Validate token
+ * @param {string} token - The token to validate.
+ * @return {object} The validation result.
  */
 export function validate(token: string) {
     if (isProduction()) {

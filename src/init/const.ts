@@ -1,7 +1,8 @@
 // Constants
 
 export const APP_NAME = "Sara Hoshikawa";
-export const APP_DESCRIPTION = "無密碼式身分認證系統。A passwordless authentication system.";
+export const APP_DESCRIPTION =
+    "無密碼式身分認證系統。A passwordless authentication system.";
 
 export const APP_VERSION = "latest";
 

@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeAll, afterAll } from "bun:test";
-import { nanoid } from "nanoid";
+import {describe, expect, it, beforeAll} from "bun:test";
+import {nanoid} from "nanoid";
 
 // ============================================================
 // Integration Tests: /users & /tokens API
@@ -25,6 +25,10 @@ const state: {
 
 const userAgent = "bun-test/1.0 sara-recv-integration";
 
+/**
+ * Generate a fake user for testing
+ * @return {object} The fake user object.
+ */
 function generateFakeUser() {
     const id = nanoid(8).toLowerCase();
     return {
@@ -43,8 +47,10 @@ let HEADER_REFRESH_TOKEN: string;
 
 beforeAll(async () => {
     // Dynamic import to ensure env is loaded first
-    const { app: _app } = await import("../src/index");
-    const { useCache } = await import("../src/init/cache");
+    const {app: _app} = await import("../src/index");
+    const {prepare: prepareDatabase} = await import("../src/init/database");
+    await prepareDatabase();
+    const {useCache} = await import("../src/init/cache");
     const constants = await import("../src/init/const");
 
     app = _app;
@@ -52,7 +58,7 @@ beforeAll(async () => {
     HEADER_REFRESH_TOKEN = constants.HEADER_REFRESH_TOKEN;
 
     // Give DB connection a moment
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 500));
 });
 
 // ============================================================
@@ -60,7 +66,7 @@ beforeAll(async () => {
 // ============================================================
 
 describe("/users - register", () => {
-    it("Step 1: POST /users/ → should return 201 with session_id", async () => {
+    it("Step 1: POST /users/ → should return 201", async () => {
         state.fakeUser = generateFakeUser();
 
         const res = await app.handle(new Request("http://localhost/users/", {
@@ -79,10 +85,15 @@ describe("/users - register", () => {
         state.registerSessionId = body.session_id;
         state.registerCode = cache.get("_testing_code");
 
-        console.log("[register] session_id:", state.registerSessionId, "code:", state.registerCode);
+        console.log(
+            "[register] session_id:",
+            state.registerSessionId,
+            "code:",
+            state.registerCode,
+        );
     });
 
-    it("Step 2: PATCH /users/ → should return 201 and X-Refresh-Token header", async () => {
+    it("Step 2: PATCH /users/ → should return 201", async () => {
         expect(state.registerSessionId).toBeTruthy();
         expect(state.registerCode).toBeTruthy();
 
@@ -103,10 +114,13 @@ describe("/users - register", () => {
         expect(refreshToken).toBeTruthy();
         state.xaraToken = refreshToken;
 
-        console.log("[register verify] xaraToken prefix:", state.xaraToken?.slice(0, 30) + "...");
+        console.log(
+            "[register verify] xaraToken prefix:",
+            state.xaraToken?.slice(0, 30) + "...",
+        );
     });
 
-    it("Step 3: POST /users/ with same email → should return 409 Conflict", async () => {
+    it("Step 3: POST /users/ with same email → 409 Conflict", async () => {
         const res = await app.handle(new Request("http://localhost/users/", {
             method: "POST",
             headers: {
@@ -125,7 +139,7 @@ describe("/users - register", () => {
 // ============================================================
 
 describe("/tokens - login", () => {
-    it("Step 1: POST /tokens/ → should return 201 with session_id", async () => {
+    it("Step 1: POST /tokens/ → 201 with session_id", async () => {
         expect(state.fakeUser).toBeTruthy();
 
         const res = await app.handle(new Request("http://localhost/tokens/", {
@@ -134,7 +148,7 @@ describe("/tokens - login", () => {
                 "content-type": "application/json",
                 "user-agent": userAgent,
             },
-            body: JSON.stringify({ email: state.fakeUser!.email }),
+            body: JSON.stringify({email: state.fakeUser!.email}),
         }));
 
         expect(res.status).toBe(201);
@@ -144,10 +158,15 @@ describe("/tokens - login", () => {
         state.loginSessionId = body.session_id;
         state.loginCode = cache.get("_testing_code");
 
-        console.log("[login] session_id:", state.loginSessionId, "code:", state.loginCode);
+        console.log(
+            "[login] session_id:",
+            state.loginSessionId,
+            "code:",
+            state.loginCode,
+        );
     });
 
-    it("Step 2: PATCH /tokens/ → should return 201 and X-Refresh-Token header", async () => {
+    it("Step 2: PATCH /tokens/ → return 201 and header", async () => {
         expect(state.loginSessionId).toBeTruthy();
         expect(state.loginCode).toBeTruthy();
 
@@ -167,17 +186,20 @@ describe("/tokens - login", () => {
         const refreshToken = res.headers.get(HEADER_REFRESH_TOKEN);
         expect(refreshToken).toBeTruthy();
 
-        console.log("[login verify] xaraToken prefix:", refreshToken?.slice(0, 30) + "...");
+        console.log(
+            "[login verify] xaraToken prefix:",
+            refreshToken?.slice(0, 30) + "...",
+        );
     });
 
-    it("Step 3: POST /tokens/ with non-existent email → should return 404", async () => {
+    it("Step 3: POST /tokens/ with non-existent email → 404", async () => {
         const res = await app.handle(new Request("http://localhost/tokens/", {
             method: "POST",
             headers: {
                 "content-type": "application/json",
                 "user-agent": userAgent,
             },
-            body: JSON.stringify({ email: "nobody@does.not.exist.local" }),
+            body: JSON.stringify({email: "nobody@does.not.exist.local"}),
         }));
 
         expect(res.status).toBe(404);
@@ -189,7 +211,7 @@ describe("/tokens - login", () => {
 // ============================================================
 
 describe("/users/me - authenticated profile", () => {
-    it("GET /users/me with valid XARA token → should return 200 with profile", async () => {
+    it("GET /users/me with valid XARA token → 200", async () => {
         expect(state.xaraToken).toBeTruthy();
 
         const res = await app.handle(new Request("http://localhost/users/me", {
@@ -207,7 +229,7 @@ describe("/users/me - authenticated profile", () => {
         expect(body.profile.avatar_hash).toBeTruthy();
     });
 
-    it("GET /users/me without token → should return 401", async () => {
+    it("GET /users/me without token → return 401", async () => {
         const res = await app.handle(new Request("http://localhost/users/me", {
             method: "GET",
         }));

@@ -1,8 +1,8 @@
-import { getMust } from "../config";
-import { createHmac } from "node:crypto";
-import jwt, { SignOptions, VerifyOptions } from "jsonwebtoken";
-import { APP_NAME as issuerIdentity } from "../init/const";
-import { usePublicKey, usePrivateKey } from "../init/keypair";
+import {getMust} from "../config";
+import {createHmac} from "node:crypto";
+import jwt, {SignOptions, VerifyOptions} from "jsonwebtoken";
+import {APP_NAME as issuerIdentity} from "../init/const";
+import {usePublicKey, usePrivateKey} from "../init/keypair";
 import User from "../models/user";
 import Token from "../models/token";
 
@@ -36,6 +36,11 @@ export interface TokenPayload {
     jti: string;
 }
 
+/**
+ * Issue a new token.
+ * @param {any} userData - The user data.
+ * @return {Promise<string>} The issued token.
+ */
 export async function issue(userData: any): Promise<string> {
     const user = {
         _id: userData._id,
@@ -53,18 +58,24 @@ export async function issue(userData: any): Promise<string> {
     const privateKey = usePrivateKey();
     const guardSecret = getMust("SARA_GUARD_SECRET");
 
-    const token = new Token({ userId });
+    const token = new Token({userId});
     const tokenIdPrefix = (await token.save()).id;
     const tokenIdSuffix = userRevision;
     const tokenId = `${tokenIdPrefix}/${tokenIdSuffix}`;
 
-    const saraTokenPayload: TokenPayload = { user, sub: userId, jti: tokenId };
+    const saraTokenPayload: TokenPayload = {user, sub: userId, jti: tokenId};
     const saraToken = jwt.sign(saraTokenPayload, privateKey, issueOptions);
     const guardToken = hmac256hex(tokenId, guardSecret);
 
     return `${saraToken}|${guardToken}`;
 }
 
+/**
+ * Update an existing token.
+ * @param {string} token - The original token.
+ * @param {any} userData - The user data.
+ * @return {string} The updated token.
+ */
 export function update(token: string, userData: any): string {
     const user = {
         _id: userData._id,
@@ -85,7 +96,11 @@ export function update(token: string, userData: any): string {
 
     const [originalSaraToken, originalGuardToken] = token.split("|", 2);
 
-    const verified = jwt.verify(originalSaraToken, publicKey, validateOptions) as any;
+    const verified = jwt.verify(
+        originalSaraToken,
+        publicKey,
+        validateOptions,
+    ) as any;
     const saraTokenPayload = verified.payload as TokenPayload;
 
     if (userId !== saraTokenPayload.sub) {
@@ -100,10 +115,10 @@ export function update(token: string, userData: any): string {
         throw new Error("unexpected guard token");
     }
 
-    const [originalTokenIdPrefix, originalTokenIdSuffix] = saraTokenPayload.jti.split("/", 2);
-    const tokenId = `${originalTokenIdPrefix}/${userRevision}`;
+    const [tokenIdPrefix, tokenIdSuffix] = saraTokenPayload.jti.split("/", 2);
+    const tokenId = `${tokenIdPrefix}/${userRevision}`;
 
-    if (userRevision <= parseInt(originalTokenIdSuffix)) {
+    if (userRevision <= parseInt(tokenIdSuffix)) {
         throw new Error("unexpected user version");
     }
 
@@ -119,6 +134,11 @@ export function update(token: string, userData: any): string {
     return `${saraToken}|${guardToken}`;
 }
 
+/**
+ * Validate a token.
+ * @param {string} token - The token to validate.
+ * @return {Promise<any>} The validation result.
+ */
 export async function validate(token: string) {
     const publicKey = usePublicKey();
     const result: {
@@ -133,7 +153,11 @@ export async function validate(token: string) {
 
     try {
         const [saraToken, guardToken] = token.split("|", 2);
-        const verified = jwt.verify(saraToken, publicKey, validateOptions) as any;
+        const verified = jwt.verify(
+            saraToken,
+            publicKey,
+            validateOptions,
+        ) as any;
         const payload = verified.payload as TokenPayload;
 
         const guardSecret = getMust("SARA_GUARD_SECRET");

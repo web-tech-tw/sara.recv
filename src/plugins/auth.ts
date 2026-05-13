@@ -1,8 +1,8 @@
-import { Elysia } from "elysia";
+import {Elysia} from "elysia";
 import * as xaraToken from "../utils/xara_token";
 import * as testTokenAuth from "../utils/test_token";
-import { isProduction } from "../config";
-import { isObjectPropExists } from "../utils/native";
+import {isProduction} from "../config";
+import {isObjectPropExists} from "../utils/native";
 
 const authMethods: Record<string, (token: string) => Promise<any>> = {
     "XARA": xaraToken.validate,
@@ -16,17 +16,19 @@ export interface AuthContext {
     secret: string;
 }
 
-export const authPlugin = new Elysia({ name: "auth" })
-    .derive({ as: 'global' }, async ({ headers }): Promise<{ auth: AuthContext | null }> => {
+export const authPlugin = new Elysia({name: "auth"})
+    .derive({as: "global"}, async ({
+        headers,
+    }): Promise<{ auth: AuthContext | null }> => {
         const authHeader = headers["authorization"];
-        if (!authHeader) return { auth: null };
+        if (!authHeader) return {auth: null};
 
         const params = authHeader.split(" ");
-        if (params.length !== 2) return { auth: null };
+        if (params.length !== 2) return {auth: null};
 
         const [method, secret] = params;
         if (!isObjectPropExists(authMethods, method)) {
-            return { auth: null };
+            return {auth: null};
         }
 
         const validateFn = authMethods[method];
@@ -37,7 +39,7 @@ export const authPlugin = new Elysia({ name: "auth" })
         }
 
         if (result.isAborted) {
-            return { auth: null };
+            return {auth: null};
         }
 
         return {
@@ -45,30 +47,31 @@ export const authPlugin = new Elysia({ name: "auth" })
                 id: result.userId as string,
                 metadata: result.payload as any,
                 method,
-                secret
-            }
+                secret,
+            },
         };
     })
-    .macro(({ onBeforeHandle }) => ({
+    .macro(({onBeforeHandle}) => ({
         access(requiredRole: string | null) {
-            onBeforeHandle(({ auth, error }: { auth: AuthContext | null, error: any }) => {
+            onBeforeHandle(({auth, status}: any) => {
                 if (!auth || !auth.id) {
-                    return error(401);
+                    return status(401);
                 }
 
                 if (
                     auth.method !== "XARA" &&
                     !(auth.method === "TEST" && !isProduction())
                 ) {
-                    return error(405);
+                    return status(405);
                 }
 
                 const userRoles = auth.metadata?.profile?.roles;
                 const isUserRolesValid = Array.isArray(userRoles);
 
-                if (requiredRole && (!isUserRolesValid || !userRoles.includes(requiredRole))) {
-                    return error(403);
+                if (requiredRole &&
+                    (!isUserRolesValid || !userRoles.includes(requiredRole))) {
+                    return status(403);
                 }
             });
-        }
+        },
     }));

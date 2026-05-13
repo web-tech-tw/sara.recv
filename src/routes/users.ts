@@ -1,13 +1,13 @@
-import { Elysia, t } from "elysia";
-import { authPlugin } from "../plugins/auth";
-import { restrictorBefore, restrictorAfter } from "../plugins/restrictor";
-import User from "../models/user";
+import {Elysia, t} from "elysia";
+import {authPlugin} from "../plugins/auth";
+import {restrictorBefore, restrictorAfter} from "../plugins/restrictor";
+import User, {IPasskey} from "../models/user";
 import * as xaraToken from "../utils/xara_token";
 import * as codeSession from "../utils/code_session";
 import * as passkeySession from "../utils/passkey_session";
 import sendMail from "../utils/mail_sender";
-import { getIPAddress, getUserAgent } from "../utils/visitor";
-import { getMust } from "../config";
+import {getIPAddress, getUserAgent} from "../utils/visitor";
+import {getMust} from "../config";
 import {
     generateRegistrationOptions,
     verifyRegistrationResponse,
@@ -17,40 +17,43 @@ import {
     HEADER_REFRESH_TOKEN,
     SESSION_TYPE_CREATE_USER,
     SESSION_TYPE_CREATE_PASSKEY,
-    SESSION_TYPE_UPDATE_EMAIL
+    SESSION_TYPE_UPDATE_EMAIL,
 } from "../init/const";
-import { sha256hex, generateRandomCode } from "../utils/native";
-import { useCache } from "../init/cache";
+import {sha256hex, generateRandomCode} from "../utils/native";
+import {useCache} from "../init/cache";
 
 const cache = useCache();
 
-export const usersRoutes = new Elysia({ prefix: "/users" })
+/**
+ * User management routes
+ */
+export const usersRoutes = new Elysia({prefix: "/users"})
     .use(authPlugin)
     /**
      * Get user profile
      */
-    .get("/me", async ({ auth, error }: any) => {
+    .get("/me", async ({auth, status}) => {
         const userId = auth!.id;
         const user = await User.findById(userId).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
         const profile = user.toObject();
         profile.avatar_hash = sha256hex(profile.email.toLowerCase());
 
-        return { profile };
+        return {profile};
     }, {
-        access: null
+        access: null,
     })
     /**
      * Update user profile
      */
-    .put("/me", async ({ auth, body, set, error }: any) => {
+    .put("/me", async ({auth, body, set, status}) => {
         const user = await User.findById(auth!.id).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
         user.nickname = body.nickname || auth!.metadata.profile.nickname;
 
-        if (user.nickname === APP_NAME) return error(403);
+        if (user.nickname === APP_NAME) return status(403);
 
         user.revision++;
         const updatedUser = (await user.save()).toObject();
@@ -58,19 +61,19 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
         const token = xaraToken.update(auth!.secret, updatedUser);
         set.headers[HEADER_REFRESH_TOKEN] = token;
         set.status = 201;
-        return { message: "Profile updated" };
+        return {message: "Profile updated"};
     }, {
         access: null,
         body: t.Object({
-            nickname: t.Optional(t.String())
-        })
+            nickname: t.Optional(t.String()),
+        }),
     })
     /**
      * Delete user profile (soft delete)
      */
-    .delete("/me", async ({ auth, set, error }: any) => {
+    .delete("/me", async ({auth, set, status}) => {
         const user = await User.findById(auth!.id).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
         user.nickname = APP_NAME;
         user.email = new Date().toISOString();
@@ -81,21 +84,26 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
         set.headers[HEADER_REFRESH_TOKEN] = "|";
         set.status = 204;
     }, {
-        access: null
+        access: null,
     })
     /**
      * Update user's email (request session)
      */
-    .put("/me/email", async ({ auth, body, request, server, error }: any) => {
+    .put("/me/email", async ({auth, body, request, server, status}) => {
         const email = body.email.toLowerCase();
 
         const metadata = {
             userId: auth!.id,
             email,
         };
-        const { code, sessionId } = codeSession.createOne("create_email", metadata, 8, 1800);
+        const {code, sessionId} = codeSession.createOne(
+            "create_email",
+            metadata,
+            8,
+            1800,
+        );
 
-        if (await User.findOne({ email }).exec()) return error(409);
+        if (await User.findOne({email}).exec()) return status(409);
 
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
         const userData = auth!.metadata.profile;
@@ -123,7 +131,7 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             }
         } catch (e) {
             console.error(e);
-            return error(500);
+            return status(500);
         }
 
         return {
@@ -135,22 +143,33 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
         };
     }, {
         access: null,
-        body: t.Object({ email: t.String({ format: "email" }) }),
+        body: t.Object({email: t.String({format: "email"})}),
         beforeHandle: restrictorBefore(10, 60, false),
-        afterResponse: restrictorAfter(60, false, 409)
+        afterResponse: restrictorAfter(60, false, 409),
     })
     /**
      * Update user email by verification code
      */
-    .patch("/me/email", async ({ auth, body, set, request, server, error }: any) => {
-        const metadata = codeSession.getOne("create_email", body.session_id, body.code);
-        if (!metadata) return error(403);
+    .patch("/me/email", async ({
+        auth,
+        body,
+        set,
+        request,
+        server,
+        status,
+    }) => {
+        const metadata = codeSession.getOne(
+            "create_email",
+            body.session_id,
+            body.code,
+        );
+        if (!metadata) return status(403);
         metadata.deleteIt();
 
-        if (auth!.id !== metadata.userId) return error(403);
+        if (auth!.id !== metadata.userId) return status(403);
 
         const user = await User.findById(auth!.id).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
         const userEmailOriginal = user.email;
         const userEmailUpdated = metadata.email;
@@ -178,27 +197,29 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             accessTm: new Date().toISOString(),
         }).catch(console.error);
 
-        return { message: "Email updated" };
+        return {message: "Email updated"};
     }, {
         access: null,
         body: t.Object({
-            code: t.String({ minLength: 8, maxLength: 8 }),
-            session_id: t.String()
+            code: t.String({minLength: 8, maxLength: 8}),
+            session_id: t.String(),
         }),
         beforeHandle: restrictorBefore(10, 60, false),
-        afterResponse: restrictorAfter(60, false)
+        afterResponse: restrictorAfter(60, false),
     })
     /**
      * Add a passkey (request options)
      */
-    .post("/me/passkeys", async ({ auth, error }: any) => {
+    .post("/me/passkeys", async ({auth, status}) => {
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
-        const { hostname: audienceHost } = new URL(audienceUrl);
+        const {hostname: audienceHost} = new URL(audienceUrl);
 
         const user = await User.findById(auth!.id).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
-        const excludeCredentials = user.passkeys.map((pk: any) => ({ id: pk.id }));
+        const excludeCredentials = user.passkeys.map(
+            (pk: IPasskey) => ({id: pk.id}),
+        );
 
         const sessionOptions = await generateRegistrationOptions({
             rpName: APP_NAME,
@@ -216,7 +237,11 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             userId: auth!.id,
             challenge: sessionOptions.challenge,
         };
-        const { sessionId } = passkeySession.createOne(SESSION_TYPE_CREATE_PASSKEY, metadata, 1800);
+        const {sessionId} = passkeySession.createOne(
+            SESSION_TYPE_CREATE_PASSKEY,
+            metadata,
+            1800,
+        );
 
         return {
             session_type: SESSION_TYPE_CREATE_PASSKEY,
@@ -224,20 +249,23 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             session_options: sessionOptions,
         };
     }, {
-        access: null
+        access: null,
     })
     /**
      * Verify and add passkey
      */
-    .patch("/me/passkeys", async ({ auth, body, request, error }: any) => {
+    .patch("/me/passkeys", async ({auth, body, request, status}) => {
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
-        const { hostname: audienceHost } = new URL(audienceUrl);
+        const {hostname: audienceHost} = new URL(audienceUrl);
 
-        const metadata = passkeySession.getOne(SESSION_TYPE_CREATE_PASSKEY, body.session_id);
-        if (!metadata) return error(403);
+        const metadata = passkeySession.getOne(
+            SESSION_TYPE_CREATE_PASSKEY,
+            body.session_id,
+        );
+        if (!metadata) return status(403);
         metadata.deleteIt();
 
-        if (auth!.id !== metadata.userId) return error(403);
+        if (auth!.id !== metadata.userId) return status(403);
 
         const verification = await verifyRegistrationResponse({
             response: body.credential,
@@ -246,68 +274,79 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             expectedRPID: audienceHost,
         });
 
-        if (!verification.verified || !verification.registrationInfo) return error(403);
+        if (!verification.verified || !verification.registrationInfo) {
+            return status(403);
+        }
 
         const user = await User.findById(auth!.id).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
-        const { credential } = verification.registrationInfo;
+        const {credential} = verification.registrationInfo;
         const labelPrefix = getUserAgent(request.headers, true);
         const labelSuffix = generateRandomCode(4);
         const label = `${labelPrefix} - ${labelSuffix}`;
-        
-        user.passkeys.push({ ...credential, label } as any);
+
+        user.passkeys.push({...credential, label} as any);
         await user.save();
 
-        return { message: "Passkey added" };
+        return {message: "Passkey added"};
     }, {
         access: null,
         body: t.Object({
             session_id: t.String(),
-            credential: t.Any()
-        })
+            credential: t.Any(),
+        }),
     })
     /**
      * Update passkey label
      */
-    .put("/me/passkeys/:passkey_id", async ({ auth, params, body, error }: any) => {
+    .put("/me/passkeys/:passkey_id", async ({
+        auth,
+        params,
+        body,
+        status,
+    }) => {
         const user = await User.findById(auth!.id).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
-        const passkey = user.passkeys.find((pk: any) => pk.id === params.passkey_id);
-        if (!passkey) return error(404);
+        const passkey = user.passkeys.find(
+            (pk: IPasskey) => pk.id === params.passkey_id,
+        );
+        if (!passkey) return status(404);
 
         passkey.label = body.label;
         await user.save();
-        return { message: "Passkey label updated" };
+        return {message: "Passkey label updated"};
     }, {
         access: null,
-        body: t.Object({ label: t.String() }),
-        params: t.Object({ passkey_id: t.String() })
+        body: t.Object({label: t.String()}),
+        params: t.Object({passkey_id: t.String()}),
     })
     /**
      * Delete passkey
      */
-    .delete("/me/passkeys/:passkey_id", async ({ auth, params, error }: any) => {
+    .delete("/me/passkeys/:passkey_id", async ({auth, params, status}) => {
         const user = await User.findById(auth!.id).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
-        const index = user.passkeys.findIndex((pk: any) => pk.id === params.passkey_id);
-        if (index === -1) return error(404);
+        const index = user.passkeys.findIndex(
+            (pk: IPasskey) => pk.id === params.passkey_id,
+        );
+        if (index === -1) return status(404);
 
         user.passkeys.splice(index, 1);
         await user.save();
-        return { message: "Passkey removed" };
+        return {message: "Passkey removed"};
     }, {
         access: null,
-        params: t.Object({ passkey_id: t.String() })
+        params: t.Object({passkey_id: t.String()}),
     })
     /**
      * Get user by ID (Public profile)
      */
-    .get("/:user_id", async ({ params, error }: any) => {
+    .get("/:user_id", async ({params, status}) => {
         const user = await User.findById(params.user_id).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
         const userData = user.toObject();
         return {
@@ -317,14 +356,14 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             },
         };
     }, {
-        params: t.Object({ user_id: t.String() }),
+        params: t.Object({user_id: t.String()}),
         beforeHandle: restrictorBefore(10, 60, true),
-        afterResponse: restrictorAfter(60, true, 404)
+        afterResponse: restrictorAfter(60, true, 404),
     })
     /**
      * Register a user (Request session)
      */
-    .post("/", async ({ body, request, server, error }: any) => {
+    .post("/", async ({body, set, request, server, status}) => {
         const email = body.email.toLowerCase();
 
         const metadata = {
@@ -334,10 +373,15 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             updated_at: Date.now(),
         };
 
-        if (metadata.nickname === APP_NAME) return error(403);
-        if (await User.findOne({ email }).exec()) return error(409);
+        if (metadata.nickname === APP_NAME) return status(403);
+        if (await User.findOne({email}).exec()) return status(409);
 
-        const { code, sessionId } = codeSession.createOne(SESSION_TYPE_CREATE_USER, metadata, 7, 1800);
+        const {code, sessionId} = codeSession.createOne(
+            SESSION_TYPE_CREATE_USER,
+            metadata,
+            7,
+            1800,
+        );
 
         const sessionTm = new Date().toISOString();
         const sessionUa = getUserAgent(request.headers, true);
@@ -360,9 +404,10 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             }
         } catch (e) {
             console.error(e);
-            return error(500);
+            return status(500);
         }
 
+        set.status = 201;
         return {
             session_type: SESSION_TYPE_CREATE_USER,
             session_ip: sessionIp,
@@ -373,20 +418,26 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
     }, {
         body: t.Object({
             nickname: t.String(),
-            email: t.String({ format: "email" })
+            email: t.String({format: "email"}),
         }),
         beforeHandle: restrictorBefore(20, 3600, false),
-        afterResponse: restrictorAfter(3600, false, 409)
+        afterResponse: restrictorAfter(3600, false, 409),
     })
     /**
      * Verify registration via code
      */
-    .patch("/", async ({ body, set, request, server, error }: any) => {
-        const metadata = codeSession.getOne(SESSION_TYPE_CREATE_USER, body.session_id, body.code);
-        if (!metadata) return error(403);
+    .patch("/", async ({body, set, request, server, status}) => {
+        const metadata = codeSession.getOne(
+            SESSION_TYPE_CREATE_USER,
+            body.session_id,
+            body.code,
+        );
+        if (!metadata) return status(403);
         metadata.deleteIt();
 
-        if (await User.findOne({ email: metadata.email }).exec()) return error(409);
+        if (await User.findOne({email: metadata.email}).exec()) {
+            return status(409);
+        }
 
         const user = new User(metadata);
         const userData = (await user.save()).toObject();
@@ -409,12 +460,12 @@ export const usersRoutes = new Elysia({ prefix: "/users" })
             accessTm: new Date().toISOString(),
         }).catch(console.error);
 
-        return { message: "User registered" };
+        return {message: "User registered"};
     }, {
         body: t.Object({
-            code: t.String({ minLength: 7, maxLength: 7 }),
-            session_id: t.String()
+            code: t.String({minLength: 7, maxLength: 7}),
+            session_id: t.String(),
         }),
         beforeHandle: restrictorBefore(20, 3600, false),
-        afterResponse: restrictorAfter(3600, false)
+        afterResponse: restrictorAfter(3600, false),
     });

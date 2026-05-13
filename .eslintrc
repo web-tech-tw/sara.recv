@@ -1,22 +1,45 @@
 {
+  "parser": "@typescript-eslint/parser",
   "plugins": [
-    "jsdoc"
+    "jsdoc",
+    "@typescript-eslint"
   ],
   "extends": [
     "eslint:recommended",
-    "google"
+    "google",
+    "plugin:@typescript-eslint/recommended"
   ],
-  "rules": {
-    "linebreak-style": 1,
-    "indent": [
-      "error",
-      4
-    ],
-    "quotes": [
-      "error",
-      "double"
-    ]
-  },
+    "rules": {
+        "linebreak-style": 0,
+        "indent": [
+            "error",
+            4
+        ],
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "@typescript-eslint/no-explicit-any": 0,
+        "new-cap": [
+            "error",
+            {
+                "capIsNewExceptions": [
+                    "Object",
+                    "String",
+                    "Optional",
+                    "Number",
+                    "Boolean",
+                    "Any",
+                    "Union",
+                    "Intersect",
+                    "Record",
+                    "Array",
+                    "Enum",
+                    "Nullable"
+                ]
+            }
+        ]
+    },
   "env": {
     "es6": true,
     "node": true,
@@ -24,6 +47,7 @@
     "browser": false
   },
   "parserOptions": {
-    "ecmaVersion": 2021
+    "ecmaVersion": 2021,
+    "sourceType": "module"
   }
 }

@@ -1,5 +1,5 @@
-import { join as pathJoin } from "node:path";
-import { existsSync } from "node:fs";
+import {join as pathJoin} from "node:path";
+import {existsSync} from "node:fs";
 import dotenv from "dotenv";
 
 /**
@@ -27,13 +27,15 @@ export function runLoader(): void {
 
 /**
  * Check is production mode.
+ * @return {boolean} Is production mode.
  */
 export function isProduction(): boolean {
-    return getMust("NODE_ENV") === "production";
+    return getFallback("NODE_ENV", "development") === "production";
 }
 
 /**
  * Get environment overview.
+ * @return {{node: string, runtime: string}} Environment overview.
  */
 export function getEnvironmentOverview(): { node: string; runtime: string } {
     return {
@@ -44,6 +46,8 @@ export function getEnvironmentOverview(): { node: string; runtime: string } {
 
 /**
  * Shortcut to get config value.
+ * @param {string} key Config key.
+ * @return {string|undefined} Config value.
  */
 export function get(key: string): string | undefined {
     return process.env[key];
@@ -51,6 +55,8 @@ export function get(key: string): string | undefined {
 
 /**
  * Get the bool value from config, if yes, returns true.
+ * @param {string} key Config key.
+ * @return {boolean} Config value.
  */
 export function getEnabled(key: string): boolean {
     return getMust(key) === "yes";
@@ -58,6 +64,9 @@ export function getEnabled(key: string): boolean {
 
 /**
  * Get the array value from config.
+ * @param {string} key Config key.
+ * @param {string} [separator=","] Separator.
+ * @return {string[]} Config values.
  */
 export function getSplited(key: string, separator: string = ","): string[] {
     return getMust(key)
@@ -68,6 +77,8 @@ export function getSplited(key: string, separator: string = ","): string[] {
 
 /**
  * Get the value from config with error thrown.
+ * @param {string} key Config key.
+ * @return {string} Config value.
  */
 export function getMust(key: string): string {
     const value = get(key);
@@ -79,6 +90,9 @@ export function getMust(key: string): string {
 
 /**
  * Get the value from config with fallback.
+ * @param {string} key Config key.
+ * @param {string} fallback Fallback value.
+ * @return {string} Config value.
  */
 export function getFallback(key: string, fallback: string): string {
     return get(key) || fallback;

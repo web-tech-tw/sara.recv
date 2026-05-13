@@ -1,61 +1,69 @@
-import { Elysia, t } from "elysia";
-import { authPlugin } from "../plugins/auth";
-import { restrictorBefore, restrictorAfter } from "../plugins/restrictor";
-import User from "../models/user";
+import {Elysia, t} from "elysia";
+import {authPlugin} from "../plugins/auth";
+import {restrictorBefore, restrictorAfter} from "../plugins/restrictor";
+import User, {IPasskey} from "../models/user";
 import Token from "../models/token";
 import * as xaraToken from "../utils/xara_token";
 import * as codeSession from "../utils/code_session";
 import * as passkeySession from "../utils/passkey_session";
 import sendMail from "../utils/mail_sender";
-import { getIPAddress, getUserAgent } from "../utils/visitor";
-import { getMust } from "../config";
+import {getIPAddress, getUserAgent} from "../utils/visitor";
+import {getMust} from "../config";
 import {
     generateAuthenticationOptions,
     verifyAuthenticationResponse,
 } from "@simplewebauthn/server";
-import { HEADER_REFRESH_TOKEN, SESSION_TYPE_CREATE_TOKEN } from "../init/const";
-import { sha256hex } from "../utils/native";
-import { useCache } from "../init/cache";
-
+import {HEADER_REFRESH_TOKEN, SESSION_TYPE_CREATE_TOKEN} from "../init/const";
+import {sha256hex} from "../utils/native";
+import {useCache} from "../init/cache";
 const cache = useCache();
 
-export const tokensRoutes = new Elysia({ prefix: "/tokens" })
+/**
+ * Token management routes
+ */
+export const tokensRoutes = new Elysia({prefix: "/tokens"})
     .use(authPlugin)
     /**
      * Validate a token is valid or not
      */
-    .head("/:token_id_prefix/:token_id_suffix", async ({ params, error }: any) => {
-        const { token_id_prefix, token_id_suffix } = params;
-        
-        const tokenState = await Token.findById(token_id_prefix).exec();
-        if (!tokenState) return error(404);
+    .head("/:token_id_prefix/:token_id_suffix",
+        async ({params, status}) => {
+            const {
+                token_id_prefix: tokenIdPrefix,
+                token_id_suffix: tokenIdSuffix,
+            } = params;
 
-        const user = await User.findById(tokenState.userId).exec();
-        if (!user) return error(404);
+            const tokenState = await Token.findById(tokenIdPrefix).exec();
+            if (!tokenState) return status(404);
 
-        if (parseInt(token_id_suffix) !== user.revision) return error(404);
+            const user = await User.findById(tokenState.userId).exec();
+            if (!user) return status(404);
 
-        return new Response(null, { status: 200 });
-    }, {
-        params: t.Object({
-            token_id_prefix: t.String(),
-            token_id_suffix: t.String()
+            if (parseInt(tokenIdSuffix) !== user.revision) return status(404);
+
+            return new Response(null, {status: 200});
+        }, {
+            params: t.Object({
+                token_id_prefix: t.String(),
+                token_id_suffix: t.String(),
+            }),
         })
-    })
     /**
      * Issue a token session for a user (Email Code)
      */
-    .post("/", async ({ body, request, server, error }: any) => {
+    .post("/", async ({body, set, request, server, status}) => {
         const email = body.email.toLowerCase();
 
-        const user = await User.findOne({ email }).exec();
-        if (!user) return error(404);
+        const user = await User.findOne({email}).exec();
+        if (!user) return status(404);
 
         const metadata = {
             userId: user.id,
             email: user.email,
         };
-        const { code, sessionId } = codeSession.createOne("create_token", metadata, 6, 1800);
+        const {code, sessionId} = codeSession.createOne(
+            "create_token", metadata, 6, 1800,
+        );
 
         const userData = user.toObject();
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
@@ -82,9 +90,10 @@ export const tokensRoutes = new Elysia({ prefix: "/tokens" })
             }
         } catch (e) {
             console.error(e);
-            return error(500);
+            return status(500);
         }
 
+        set.status = 201;
         return {
             session_type: SESSION_TYPE_CREATE_TOKEN,
             session_ip: sessionIp,
@@ -94,24 +103,28 @@ export const tokensRoutes = new Elysia({ prefix: "/tokens" })
         };
     }, {
         body: t.Object({
-            email: t.String({ format: "email" })
+            email: t.String({format: "email"}),
         }),
         beforeHandle: restrictorBefore(10, 3600, false),
-        afterResponse: restrictorAfter(3600, false, 404)
+        afterResponse: restrictorAfter(3600, false, 404),
     })
     /**
      * Verify user's identity and issue an access token by a code
      */
-    .patch("/", async ({ body, set, error }: any) => {
-        const metadata = codeSession.getOne("create_token", body.session_id, body.code);
+    .patch("/", async ({body, set, request, server, status}) => {
+        const metadata = codeSession.getOne(
+            "create_token",
+            body.session_id,
+            body.code,
+        );
 
-        if (!metadata) return error(403);
+        if (!metadata) return status(403);
         metadata.deleteIt();
 
-        const user = await User.findOne({ email: metadata.email }).exec();
-        if (!user) return error(404);
+        const user = await User.findOne({email: metadata.email}).exec();
+        if (!user) return status(404);
 
-        if (user.id !== metadata.userId) return error(403);
+        if (user.id !== metadata.userId) return status(403);
 
         const userData = user.toObject();
         userData.avatar_hash = sha256hex(userData.email.toLowerCase());
@@ -123,8 +136,9 @@ export const tokensRoutes = new Elysia({ prefix: "/tokens" })
 
         // Notify user via email
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
-        const sessionIp = "unknown"; 
-        
+        const sessionIp = getIPAddress(request, server);
+        const accessUa = getUserAgent(request.headers, true);
+
         sendMail("notify_create_token", {
             to: userData.email,
             audienceUrl,
@@ -134,32 +148,32 @@ export const tokensRoutes = new Elysia({ prefix: "/tokens" })
             sessionId: body.session_id,
             accessMethod: "Email Code",
             accessTm: new Date().toISOString(),
-            accessUa: "unknown",
+            accessUa,
             accessIp: sessionIp,
         }).catch(console.error);
 
-        return { message: "Token issued" };
+        return {message: "Token issued"};
     }, {
         body: t.Object({
-            code: t.String({ minLength: 6, maxLength: 6 }),
-            session_id: t.String()
+            code: t.String({minLength: 6, maxLength: 6}),
+            session_id: t.String(),
         }),
         beforeHandle: restrictorBefore(10, 3600, false),
-        afterResponse: restrictorAfter(3600, false)
+        afterResponse: restrictorAfter(3600, false),
     })
     /**
      * Issue a passkey session for a user
      */
-    .post("/passkeys", async ({ body, error }: any) => {
+    .post("/passkeys", async ({body, set, status}) => {
         const email = body.email.toLowerCase();
 
-        const user = await User.findOne({ email }).exec();
-        if (!user || !user.passkeys.length) return error(404);
+        const user = await User.findOne({email}).exec();
+        if (!user || !user.passkeys.length) return status(404);
 
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
-        const { hostname: audienceHost } = new URL(audienceUrl);
+        const {hostname: audienceHost} = new URL(audienceUrl);
 
-        const allowCredentials = user.passkeys.map((passkey: any) => ({
+        const allowCredentials = user.passkeys.map((passkey: IPasskey) => ({
             id: passkey.id,
         }));
 
@@ -172,38 +186,44 @@ export const tokensRoutes = new Elysia({ prefix: "/tokens" })
             userId: user.id,
             challenge: sessionOptions.challenge,
         };
-        const { sessionId } = passkeySession.createOne("create_token", metadata, 1800);
+        const {sessionId} = passkeySession.createOne(
+            "create_token", metadata, 1800,
+        );
 
+        set.status = 201;
         return {
+            session_type: SESSION_TYPE_CREATE_TOKEN,
             session_id: sessionId,
             session_options: sessionOptions,
         };
     }, {
         body: t.Object({
-            email: t.String({ format: "email" })
+            email: t.String({format: "email"}),
         }),
         beforeHandle: restrictorBefore(10, 3600, false),
-        afterResponse: restrictorAfter(3600, false)
+        afterResponse: restrictorAfter(3600, false),
     })
     /**
      * Verify user's identity and issue an access token by passkey
      */
-    .patch("/passkeys", async ({ body, set, request, server, error }: any) => {
+    .patch("/passkeys", async ({body, set, request, server, status}) => {
         const metadata = passkeySession.getOne("create_token", body.session_id);
 
-        if (!metadata) return error(403);
+        if (!metadata) return status(403);
         metadata.deleteIt();
 
         const audienceUrl = getMust("SARA_AUDIENCE_URL");
-        const { hostname: audienceHost } = new URL(audienceUrl);
+        const {hostname: audienceHost} = new URL(audienceUrl);
 
         const user = await User.findById(metadata.userId).exec();
-        if (!user) return error(404);
+        if (!user) return status(404);
 
-        const { credential } = body;
-        const passkey = user.passkeys.find((pk: any) => pk.id === credential.id);
+        const {credential} = body;
+        const passkey = user.passkeys.find(
+            (pk: IPasskey) => pk.id === credential.id,
+        );
 
-        if (!passkey) return error(403);
+        if (!passkey) return status(403);
 
         let verification;
         try {
@@ -216,10 +236,10 @@ export const tokensRoutes = new Elysia({ prefix: "/tokens" })
             });
         } catch (e) {
             console.error(e);
-            return error(403);
+            return status(403);
         }
 
-        if (!verification.verified) return error(403);
+        if (!verification.verified) return status(403);
 
         const userData = user.toObject();
         userData.avatar_hash = sha256hex(userData.email.toLowerCase());
@@ -243,7 +263,7 @@ export const tokensRoutes = new Elysia({ prefix: "/tokens" })
             accessIp: getIPAddress(request, server),
         }).catch(console.error);
 
-        return { message: "Token issued" };
+        return {message: "Token issued"};
     }, {
         body: t.Object({
             session_id: t.String(),
@@ -259,8 +279,8 @@ export const tokensRoutes = new Elysia({ prefix: "/tokens" })
                 type: t.String(),
                 clientExtensionResults: t.Object({}),
                 authenticatorAttachment: t.Optional(t.String()),
-            })
+            }),
         }),
         beforeHandle: restrictorBefore(10, 3600, false),
-        afterResponse: restrictorAfter(3600, false)
+        afterResponse: restrictorAfter(3600, false),
     });

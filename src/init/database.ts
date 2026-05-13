@@ -1,7 +1,7 @@
 // mongoose is an ODM library for MongoDB.
 
 // Import config
-import { getMust } from "../config";
+import {getMust} from "../config";
 
 // Import mongoose
 import database from "mongoose";
